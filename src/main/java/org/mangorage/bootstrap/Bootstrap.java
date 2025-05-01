@@ -20,6 +20,7 @@ public final class Bootstrap {
             }
         }
 
+
         System.out.println("Path: " + Path.of("").toAbsolutePath());
 
         URLClassLoader CL_libraries = new URLClassLoader(fetchJars(new File[]{new File("libraries")}), isDev ? null : Thread.currentThread().getContextClassLoader().getParent());
