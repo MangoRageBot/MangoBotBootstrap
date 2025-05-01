@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Bootstrap {
-    public static void initOld(final String[] args) {
+    public static void main(final String[] args) {
         URLClassLoader CL_libraries = new URLClassLoader(fetchJars(new File[]{new File("libraries")}), Thread.currentThread().getContextClassLoader().getParent());
         URLClassLoader cl = new URLClassLoader(fetchJars(new File[]{new File("plugins")}), CL_libraries);
         Thread.currentThread().setContextClassLoader(cl);
