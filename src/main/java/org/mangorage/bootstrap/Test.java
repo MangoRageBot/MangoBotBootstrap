@@ -6,12 +6,18 @@ import java.lang.module.ModuleFinder;
 import java.lang.reflect.Method;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import static org.mangorage.bootstrap.Bootstrap.fetchJars;
 
 public final class Test {
     public static void main(String[] args) {
+        try {
+            System.out.println("you have 15 seconds!");
+            Thread.sleep(15_000);
+
+        } catch (Throwable ignored) {}
+
         Path libsPath = Path.of("libraries");
         Path pluginsPath = Path.of("plugins");
 
@@ -21,13 +27,10 @@ public final class Test {
 
         Configuration cfg = ModuleLayer.boot()
                 .configuration()
-                .resolve(
-                        plugins,
+                .resolveAndBind(
+                        finder,
                         ModuleFinder.of(),
-                        plugins.findAll()
-                                .stream()
-                                .map(ref -> ref.descriptor().name())
-                                .toList()
+                        Set.of()
                 );
 
 
