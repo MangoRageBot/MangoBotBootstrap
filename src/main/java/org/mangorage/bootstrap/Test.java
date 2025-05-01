@@ -22,7 +22,7 @@ public final class Test {
         Configuration cfg = ModuleLayer.boot()
                 .configuration()
                 .resolve(
-                        finder,
+                        plugins,
                         ModuleFinder.of(),
                         plugins.findAll()
                                 .stream()
