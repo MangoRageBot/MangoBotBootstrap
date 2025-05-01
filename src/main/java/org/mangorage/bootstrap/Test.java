@@ -3,12 +3,17 @@ package org.mangorage.bootstrap;
 import java.io.File;
 import java.io.IOException;
 import java.lang.module.Configuration;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
 import java.lang.reflect.Method;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.mangorage.bootstrap.Bootstrap.fetchJars;
 
@@ -16,14 +21,16 @@ public final class Test {
     public static void main(String[] args) throws IOException {
         try {
             System.out.println("you have 15 seconds!");
-            Thread.sleep(15_000);
+
 
         } catch (Throwable ignored) {}
 
-        LibraryHandler.handle();
+        final var list = LibraryHandler.handle();
 
         Path libsPath = Path.of("sortedLibraries");
         Path pluginsPath = Path.of("plugins");
+
+        Files.deleteIfExists(libsPath.resolve("okio-jvm-3.6.0.jar"));
 
         ModuleFinder plugins = ModuleFinder.of(pluginsPath);
 
@@ -34,7 +41,7 @@ public final class Test {
                 .resolveAndBind(
                         finder,
                         ModuleFinder.of(),
-                        Set.of()
+                        getModuleNames(pluginsPath)
                 );
 
 
@@ -44,6 +51,33 @@ public final class Test {
 
         var layer = ModuleLayer.boot().defineModulesWithOneLoader(cfg, cl);
         callMain("org.mangorage.entrypoint.MangoBotCore", args, cl, layer);
+    }
+
+    public static Set<String> getModuleNames(Path folder) {
+        Set<String> moduleNames = new HashSet<>();
+
+        if (folder == null || !folder.toFile().isDirectory()) {
+            throw new IllegalArgumentException("That's not a valid folder, genius: " + folder);
+        }
+
+        File[] jarFiles = folder.toFile().listFiles((dir, name) -> name.endsWith(".jar"));
+        if (jarFiles == null) return moduleNames;
+
+        for (File jar : jarFiles) {
+            try {
+                ModuleFinder finder = ModuleFinder.of(jar.toPath());
+                Set<ModuleReference> modules = finder.findAll();
+
+                for (ModuleReference moduleRef : modules) {
+                    var descriptor = moduleRef.descriptor();
+                    moduleNames.add(descriptor.name());
+                }
+            } catch (Exception e) {
+                System.err.println("Couldn't process " + jar.getName() + ": " + e.getMessage());
+            }
+        }
+
+        return moduleNames;
     }
 
     public static void callMain(String className, String[] args, ClassLoader classLoader, ModuleLayer moduleLayer) {

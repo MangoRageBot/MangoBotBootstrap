@@ -11,12 +11,13 @@ import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
 public class LibraryHandler {
 
-    public static void handle() throws IOException {
+    public static Set<String> handle() throws IOException {
         Path source = Paths.get("libraries");
         Path target = Paths.get("sortedLibraries");
 
@@ -48,6 +49,8 @@ public class LibraryHandler {
         }
 
         System.out.println("Finished deduplicating modules. Result at: " + target);
+
+        return seenModules.keySet();
     }
 
     private static void deleteDirectory(Path dir) throws IOException {
