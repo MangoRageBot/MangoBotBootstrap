@@ -1,6 +1,7 @@
 package org.mangorage.bootstrap;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -9,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Bootstrap {
-    public static void main(final String[] args) {
+    public static void main(final String[] args) throws IOException {
 
         if (args.length > 0) {
             if (args[0].contains("--useModules")) {

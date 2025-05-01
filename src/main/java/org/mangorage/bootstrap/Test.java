@@ -1,24 +1,28 @@
 package org.mangorage.bootstrap;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.lang.reflect.Method;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Set;
 
 import static org.mangorage.bootstrap.Bootstrap.fetchJars;
 
 public final class Test {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         try {
             System.out.println("you have 15 seconds!");
             Thread.sleep(15_000);
 
         } catch (Throwable ignored) {}
 
-        Path libsPath = Path.of("libraries");
+        LibraryHandler.handle();
+
+        Path libsPath = Path.of("sortedLibraries");
         Path pluginsPath = Path.of("plugins");
 
         ModuleFinder plugins = ModuleFinder.of(pluginsPath);
