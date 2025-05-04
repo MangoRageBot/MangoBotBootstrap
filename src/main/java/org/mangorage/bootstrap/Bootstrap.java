@@ -21,10 +21,12 @@ public final class Bootstrap {
 
         cfg.handleJars();
 
-        final var cl = cfg.constructClassloaders();
-        final var moduleLayer = cfg.constructModuleLayer(cl);
+        final var moduleCfg = cfg.constructModuleConfiguration();
 
+        final var cl = cfg.constructClassloaders();
         Thread.currentThread().setContextClassLoader(cl);
+
+        final var moduleLayer = ModuleLayer.boot().defineModulesWithOneLoader(moduleCfg, cl);
         callMain(cfg.getMainClass(), args, cl, moduleLayer);
     }
 }

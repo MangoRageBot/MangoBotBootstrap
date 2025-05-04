@@ -8,7 +8,6 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -56,16 +55,20 @@ public final class Config {
      * @throws IOException
      */
     public void handleJars() throws IOException {
-        String[] folders = cfg.getOrDefault("Sorted-Path", "").split(":");
+        if (cfg.containsKey("Sorted-Path")) {
+            String[] folders = cfg.get("Sorted-Path").split(":");
 
-        for (final var folder : folders) {
-            final Path folderPath = Path.of(folder);
-            JarHandler.handle(folderPath, Path.of(getSortedPath(folder)));
+            for (final var folder : folders) {
+                final Path folderPath = Path.of(folder);
+                JarHandler.handle(folderPath, Path.of(getSortedPath(folder)));
+            }
         }
 
-        String[] filesToDelete = cfg.getOrDefault("Delete-Files", "").split(":");
-        for (final var path : filesToDelete) {
-            Files.deleteIfExists(Path.of(path));
+        if (cfg.containsKey("Delete-Files")) {
+            String[] filesToDelete = cfg.get("Delete-Files").split(":");
+            for (final var path : filesToDelete) {
+                Files.deleteIfExists(Path.of(path));
+            }
         }
     }
 
@@ -80,17 +83,18 @@ public final class Config {
      * @return The last URLClassLoader in the constructed chain, or the system
      * classloader if the Classloader-Path is empty or invalid.
      */
-    public URLClassLoader constructClassloaders() {
+    public ClassLoader constructClassloaders() {
         final var baseDir = Path.of("");
-        String classloaderPath = cfg.getOrDefault("Classloader-Path", "");
+        String classloaderPath = cfg.get("Classloader-Path");
+        if (classloaderPath == null)
+            throw new IllegalArgumentException("Need to define Classloader-Path");
 
         if (classloaderPath.trim().isEmpty()) {
-            System.out.println("Classloader-Path is empty. Using system classloader.");
-            return (URLClassLoader) ClassLoader.getSystemClassLoader();
+            throw new IllegalStateException("Classloader-Path is empty. Define it...");
         }
 
         String[] folderNames = classloaderPath.split(":");
-        ClassLoader parentClassLoader = ClassLoader.getSystemClassLoader();
+        ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader().getParent();
         URLClassLoader currentClassLoader = null;
 
         for (String folderName : folderNames) {
@@ -111,51 +115,47 @@ public final class Config {
                 continue;
             }
 
-            try {
-                // Create a URL for the folder
-                URL folderUrl = folderFile.toURI().toURL();
+            // Create a new URLClassLoader with the current folder URL and the parent
+            URL[] urls = Util.fetchJars(new File[]{folderFile});
+            currentClassLoader = new URLClassLoader(urls, parentClassLoader);
 
-                // Create a new URLClassLoader with the current folder URL and the parent
-                URL[] urls = new URL[]{folderUrl};
-                currentClassLoader = new URLClassLoader(urls, parentClassLoader);
+            // The newly created classloader becomes the parent for the next iteration
+            parentClassLoader = currentClassLoader;
 
-                // The newly created classloader becomes the parent for the next iteration
-                parentClassLoader = currentClassLoader;
-
-            } catch (MalformedURLException e) {
-                System.err.println("Error creating URL for path " + folderPath.toAbsolutePath() + ": " + e.getMessage());
-                // Again, depending on requirements, you might want to handle this differently
-            }
         }
 
         // Return the last classloader created, or the system classloader if none were created
-        return (currentClassLoader != null) ? currentClassLoader : (URLClassLoader) ClassLoader.getSystemClassLoader();
+        return (currentClassLoader != null) ? currentClassLoader : Thread.currentThread().getContextClassLoader().getParent();
     }
 
-    public ModuleLayer constructModuleLayer(final ClassLoader classLoader) {
-        String[] modulePaths = cfg.getOrDefault("Module-Path", "").split(":");
-        Path[] paths = Arrays.stream(modulePaths)
-                .map(Path::of)
-                .toArray(Path[]::new);
+    public Configuration constructModuleConfiguration() {
+        if (cfg.containsKey("Module-Path")) {
+            String[] modulePaths = cfg.get("Module-Path").split(":");
 
-        Path[] rootPaths = Arrays.stream(cfg.getOrDefault("Root-Module-Path", "").split(":"))
-                .map(Path::of)
-                .toArray(Path[]::new);
+            Path[] paths = Arrays.stream(modulePaths)
+                    .map(Path::of)
+                    .toArray(Path[]::new);
 
-        ModuleFinder moduleFinder = ModuleFinder.of(paths);
-        Configuration moduleCfg = ModuleLayer.boot()
-                .configuration()
-                .resolveAndBind(
-                        moduleFinder,
-                        ModuleFinder.of(),
-                        rootPaths.length != 0 ? Util.getModuleNames(rootPaths[0]) : Set.of()
-                );
+            Path[] rootPaths = Arrays.stream(cfg.getOrDefault("Root-Module-Path", "").split(":"))
+                    .map(Path::of)
+                    .toArray(Path[]::new);
 
-        return ModuleLayer.boot().defineModulesWithOneLoader(moduleCfg, classLoader);
+            ModuleFinder moduleFinder = ModuleFinder.of(paths);
+
+            return ModuleLayer.boot()
+                    .configuration()
+                    .resolveAndBind(
+                            moduleFinder,
+                            ModuleFinder.of(),
+                            rootPaths.length != 0 ? Util.getModuleNames(rootPaths[0]) : Set.of()
+                    );
+        } else {
+            throw new IllegalStateException("Module-Path needs to be defined!");
+        }
     }
 
     public String getMainClass() {
-        return cfg.getOrDefault("Main-Class", "");
+        return cfg.get("Main-Class");
     }
 
     public static String getSortedPath(String originalPath) {
