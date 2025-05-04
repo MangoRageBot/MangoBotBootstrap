@@ -1,68 +1,30 @@
 package org.mangorage.bootstrap;
 
-import java.io.File;
+import org.mangorage.bootstrap.internal.Util;
+
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.file.Path;
 
-public class Bootstrap {
-    public static void main(final String[] args) throws IOException {
+import static org.mangorage.bootstrap.internal.Util.*;
 
-        if (args.length > 0) {
-            if (args[0].contains("--useModules")) {
-                Test.main(args);
-                return;
-            }
+public final class Bootstrap {
+
+    public static void main(String[] args) throws IOException {
+        final var cfgOptional = Util.findBootConfig(Path.of(""));
+
+        if (!cfgOptional.isPresent()) {
+            throw new IllegalStateException("Failed to find any boot.cfg from the root folder/sub folders");
         }
 
-        URLClassLoader CL_libraries = new URLClassLoader(fetchJars(new File[]{new File("libraries")}), Thread.currentThread().getContextClassLoader().getParent());
-        URLClassLoader cl = new URLClassLoader(fetchJars(new File[]{new File("plugins")}), CL_libraries);
+        final var cfg = cfgOptional.get();
+
+
+        cfg.handleJars();
+
+        final var cl = cfg.constructClassloaders();
+        final var moduleLayer = cfg.constructModuleLayer(cl);
+
         Thread.currentThread().setContextClassLoader(cl);
-        callMain("org.mangorage.entrypoint.MangoBotCore", args, cl);
-    }
-
-    public static URL[] fetchJars(File[] directories) {
-        // Add your extra folder here, you glutton for suffering
-
-        List<URL> urls = new ArrayList<>();
-
-        for (File dir : directories) {
-            if (!dir.exists() || !dir.isDirectory()) continue;
-
-            File[] jarFiles = dir.listFiles((d, name) -> name.endsWith(".jar"));
-            if (jarFiles == null) continue;
-
-            for (File jar : jarFiles) {
-                try {
-                    urls.add(jar.toURI().toURL());
-                } catch (MalformedURLException e) {
-                    throw new RuntimeException("Malformed URL while processing: " + jar.getAbsolutePath(), e);
-                }
-            }
-        }
-
-        return urls.toArray(URL[]::new);
-    }
-
-    public static void callMain(String className, String[] args, ClassLoader classLoader) {
-        try {
-            Class<?> clazz = Class.forName(className, false, classLoader);
-            Method mainMethod = clazz.getMethod("main", String[].class);
-
-            // Make sure it's static and public
-            if (!java.lang.reflect.Modifier.isStatic(mainMethod.getModifiers())) {
-                throw new IllegalStateException("Main method is not static, are you high?");
-            }
-
-            // Invoke the main method with a godawful cast
-            mainMethod.invoke(null, (Object) args);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Couldn't reflectively call main because something exploded.", e);
-        }
+        callMain(cfg.getMainClass(), args, cl, moduleLayer);
     }
 }

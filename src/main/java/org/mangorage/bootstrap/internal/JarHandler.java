@@ -1,4 +1,4 @@
-package org.mangorage.bootstrap;
+package org.mangorage.bootstrap.internal;
 
 import java.io.File;
 import java.io.IOException;
@@ -6,20 +6,24 @@ import java.lang.module.ModuleFinder;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
-public class LibraryHandler {
+public final class JarHandler {
 
-    public static Set<String> handle() throws IOException {
-        Path source = Paths.get("libraries");
-        Path target = Paths.get("sortedLibraries");
+    public static void safeHandle(final Path source, final Path target) {
+        try {
+            handle(source, target);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void handle(final Path source, final Path target) throws IOException {
 
         if (Files.exists(target)) {
             deleteDirectory(target);
@@ -49,8 +53,6 @@ public class LibraryHandler {
         }
 
         System.out.println("Finished deduplicating modules. Result at: " + target);
-
-        return seenModules.keySet();
     }
 
     private static void deleteDirectory(Path dir) throws IOException {
