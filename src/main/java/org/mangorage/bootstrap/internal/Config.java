@@ -117,7 +117,7 @@ public final class Config {
 
             // Create a new URLClassLoader with the current folder URL and the parent
             URL[] urls = Util.fetchJars(new File[]{folderFile});
-            currentClassLoader = new URLClassLoader(urls, parentClassLoader);
+            currentClassLoader = new MangoLoader(urls, parentClassLoader);
 
             // The newly created classloader becomes the parent for the next iteration
             parentClassLoader = currentClassLoader;

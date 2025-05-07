@@ -86,9 +86,9 @@ public final class Util {
         return null; // Jar was either not modular or you're just unlucky
     }
 
-    public static void callMain(String className, String[] args, ClassLoader classLoader) {
+    public static void callMain(String className, String[] args, Module module) {
         try {
-            Class<?> clazz = Class.forName(className, false, classLoader);
+            Class<?> clazz = Class.forName(className, false, module.getClassLoader());
             Method mainMethod = clazz.getMethod("main", String[].class);
 
             // Make sure it's static and public

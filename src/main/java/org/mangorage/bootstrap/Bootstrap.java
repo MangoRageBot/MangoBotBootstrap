@@ -4,7 +4,6 @@ import org.mangorage.bootstrap.internal.Util;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 
 import static org.mangorage.bootstrap.internal.Util.*;
 
@@ -35,6 +34,6 @@ public final class Bootstrap {
             }
         });
 
-        callMain(cfg.getMainClass(), args, cl);
+        callMain(cfg.getMainClass(), args, moduleLayer.findModule("org.mangorage.mangobotcore").get());
     }
 }
