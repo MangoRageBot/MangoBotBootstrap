@@ -3,13 +3,10 @@ package org.mangorage.bootstrap.internal;
 
 import java.io.IOException;
 import java.lang.module.ModuleReader;
-import java.lang.module.ModuleReference;
 import java.lang.module.ResolvedModule;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
-import java.security.CodeSigner;
-import java.security.CodeSource;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -20,39 +17,39 @@ public final class MangoLoader extends URLClassLoader {
         ClassLoader.registerAsParallelCapable();
     }
 
-    private final Map<String, ModuleReference> moduleMap = new HashMap<>();
-    private final Map<String, ModuleReader> moduleReaderMap = new HashMap<>();
-
-    private final Map<String, ModuleReference> localPackageToModule = new HashMap<>();
+    private final Map<String, LoadedModule> moduleMap = new HashMap<>();
+    private final Map<String, LoadedModule> localPackageToModule = new HashMap<>();
 
     public MangoLoader(URL[] urls, Set<ResolvedModule> modules, ClassLoader parent) {
         super(urls, parent);
 
-
         modules.forEach(module -> {
-            moduleMap.put(
-                    module.name(),
-                    module.reference()
-            );
+            try {
+                final var loadedModule = new LoadedModule(module.reference());
 
-            module.reference().descriptor().packages().forEach(pkg -> {
-                localPackageToModule.put(pkg, module.reference());
-            });
+                moduleMap.put(
+                        module.name(),
+                        loadedModule
+                );
+
+                module.reference().descriptor().packages().forEach(pkg -> {
+                    localPackageToModule.put(pkg, loadedModule);
+                });
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         });
-
-        System.out.println("Fiinisgh");
     }
 
     @Override
     protected URL findResource(String moduleName, String name) throws IOException {
-        final var module = moduleMap.get(moduleName);
+        final var loadedModule = moduleMap.get(moduleName);
 
-        if (module != null) {
-            final var uri = moduleReaderFor(module).find(name);
+        if (loadedModule != null) {
+            final var uri = loadedModule.getModuleReader().find(name);
             if (uri.isPresent())
                 return uri.get().toURL();
         }
-
 
         return null;
     }
@@ -60,8 +57,8 @@ public final class MangoLoader extends URLClassLoader {
     @Override
     protected Class<?> findClass(String moduleName, String name) {
         Class<?> c = null;
-        ModuleReference loadedModule = findLoadedModule(name);
-        if (loadedModule != null && loadedModule.descriptor().name().equals(moduleName))
+        LoadedModule loadedModule = findLoadedModule(name);
+        if (loadedModule != null && loadedModule.getModuleReference().descriptor().name().equals(moduleName))
             c = defineClass(name, loadedModule);
         return c;
     }
@@ -72,8 +69,8 @@ public final class MangoLoader extends URLClassLoader {
      *
      * @return the resulting Class or {@code null} if an I/O error occurs
      */
-    private Class<?> defineClass(String cn, ModuleReference loadedModule) {
-        ModuleReader reader = moduleReaderFor(loadedModule);
+    private Class<?> defineClass(String cn, LoadedModule loadedModule) {
+        ModuleReader reader = loadedModule.getModuleReader();
 
         try {
             // read class file
@@ -85,7 +82,7 @@ public final class MangoLoader extends URLClassLoader {
             }
 
             try {
-                return defineClass(cn, bb, new CodeSource(loadedModule.location().get().toURL(), (CodeSigner[]) null));
+                return defineClass(cn, bb, loadedModule.getCodeSource());
             } finally {
                 reader.release(bb);
             }
@@ -101,7 +98,7 @@ public final class MangoLoader extends URLClassLoader {
      * Returns {@code null} if none of the modules defined to this
      * class loader contain the API package for the class.
      */
-    private ModuleReference findLoadedModule(String cn) {
+    private LoadedModule findLoadedModule(String cn) {
         String pn = packageName(cn);
         return pn.isEmpty() ? null : localPackageToModule.get(pn);
     }
@@ -112,16 +109,6 @@ public final class MangoLoader extends URLClassLoader {
     private String packageName(String cn) {
         int pos = cn.lastIndexOf('.');
         return (pos < 0) ? "" : cn.substring(0, pos);
-    }
-
-    private ModuleReader moduleReaderFor(ModuleReference moduleReference) {
-        return moduleReaderMap.computeIfAbsent(moduleReference.descriptor().name(), k -> {
-            try {
-                return moduleReference.open();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
     }
 
 }
