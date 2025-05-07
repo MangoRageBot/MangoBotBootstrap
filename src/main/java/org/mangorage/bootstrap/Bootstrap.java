@@ -4,6 +4,7 @@ import org.mangorage.bootstrap.internal.Util;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.mangorage.bootstrap.internal.Util.*;
 
@@ -26,7 +27,7 @@ public final class Bootstrap {
         final var cl = cfg.constructClassloaders();
         Thread.currentThread().setContextClassLoader(cl);
 
-        final var moduleLayer = ModuleLayer.boot().defineModules(moduleCfg, s -> {
+        final var moduleController = ModuleLayer.defineModules(moduleCfg, List.of(ModuleLayer.boot()), s -> {
             if (s.startsWith("org.mangorage") & !s.contains("scanner")) {
                 return cl;
             } else {
@@ -34,6 +35,9 @@ public final class Bootstrap {
             }
         });
 
-        callMain(cfg.getMainClass(), args, moduleLayer.findModule("org.mangorage.mangobotcore").get());
+
+//        moduleControllaer.layer().modules().forEach(moduleControllaer::enableNativeAccess);
+
+        callMain(cfg.getMainClass(), args, moduleController.layer().findModule("org.mangorage.mangobotcore").get());
     }
 }
