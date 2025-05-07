@@ -86,9 +86,9 @@ public final class Util {
         return null; // Jar was either not modular or you're just unlucky
     }
 
-    public static void callMain(String className, String[] args, ClassLoader classLoader, ModuleLayer moduleLayer) {
+    public static void callMain(String className, String[] args, ClassLoader classLoader) {
         try {
-            Class<?> clazz = Class.forName(moduleLayer.findModule("org.mangorage.mangobotcore").get(), className);
+            Class<?> clazz = Class.forName(className, false, classLoader);
             Method mainMethod = clazz.getMethod("main", String[].class);
 
             // Make sure it's static and public
@@ -98,7 +98,7 @@ public final class Util {
 
             // Invoke the main method with a godawful cast
             mainMethod.invoke(null, (Object) args);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
             throw new RuntimeException("Couldn't reflectively call main because something exploded.", e);
         }

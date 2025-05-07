@@ -94,7 +94,7 @@ public final class Config {
         }
 
         String[] folderNames = classloaderPath.split(":");
-        ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader().getParent();
+        ClassLoader parentClassLoader = Thread.currentThread().getContextClassLoader();
         URLClassLoader currentClassLoader = null;
 
         for (String folderName : folderNames) {
@@ -146,7 +146,7 @@ public final class Config {
                     .configuration()
                     .resolveAndBind(
                             moduleFinder,
-                            ModuleFinder.of(),
+                            ModuleFinder.ofSystem(),
                             rootPaths.length != 0 ? Util.getModuleNames(rootPaths[0]) : Set.of()
                     );
         } else {
