@@ -1,8 +1,13 @@
 package org.mangorage.bootstrap;
 
+import org.mangorage.bootstrap.internal.JarHandler;
+import org.mangorage.bootstrap.internal.MangoLoader;
 import org.mangorage.bootstrap.internal.Util;
 
 import java.io.IOException;
+import java.lang.module.Configuration;
+import java.lang.module.ModuleFinder;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -11,33 +16,40 @@ import static org.mangorage.bootstrap.internal.Util.*;
 public final class Bootstrap {
 
     public static void main(String[] args) throws IOException {
-        final var cfgOptional = Util.findBootConfig(Path.of(""));
 
-        if (!cfgOptional.isPresent()) {
-            throw new IllegalStateException("Failed to find any boot.cfg from the root folder/sub folders");
+        final var librariesPath = Path.of("libraries");
+        final var pluginsPath = Path.of("plugins");
+
+        JarHandler.safeHandle(Path.of("libraries"), Path.of("sorted-libraries"));
+
+        List<Path> deleteFiles = List.of(
+                Path.of("sorted-libraries").resolve("okio-jvm-3.6.0.jar")
+        );
+
+        for (Path deleteFile : deleteFiles) {
+            Files.deleteIfExists(deleteFile);
         }
 
-        final var cfg = cfgOptional.get();
+        final var moduleCfg = Configuration.resolve(
+                ModuleFinder.of(pluginsPath),
+                List.of(
+                        ModuleLayer.boot().configuration()
+                ),
+                ModuleFinder.of(
+                        Path.of("sorted-libraries")
+                ),
+                Util.getModuleNames(pluginsPath)
+        );
+
+        final var moduleCl = new MangoLoader(fetchJars(librariesPath, pluginsPath), moduleCfg.modules(), Thread.currentThread().getContextClassLoader());
+
+        final var moduleLayerController = ModuleLayer.defineModules(moduleCfg, List.of(ModuleLayer.boot()), s -> moduleCl);
+        final var moduleLayer = moduleLayerController.layer();
 
 
-        cfg.handleJars();
+        System.out.println("Imagiine we worked!");
+        Thread.currentThread().setContextClassLoader(moduleCl);
 
-        final var moduleCfg = cfg.constructModuleConfiguration();
-
-        final var cl = cfg.constructClassloaders();
-        Thread.currentThread().setContextClassLoader(cl);
-
-        final var moduleController = ModuleLayer.defineModules(moduleCfg, List.of(ModuleLayer.boot()), s -> {
-            if (s.startsWith("org.mangorage") & !s.contains("scanner")) {
-                return cl;
-            } else {
-                return cl.getParent();
-            }
-        });
-
-
-//        moduleControllaer.layer().modules().forEach(moduleControllaer::enableNativeAccess);
-
-        callMain(cfg.getMainClass(), args, moduleController.layer().findModule("org.mangorage.mangobotcore").get());
+        callMain("org.mangorage.entrypoint.MangoBotCore", args, moduleLayer.findModule("org.mangorage.mangobotcore").get());
     }
 }

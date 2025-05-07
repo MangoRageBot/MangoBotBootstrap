@@ -1,96 +1,127 @@
 package org.mangorage.bootstrap.internal;
 
+
 import java.io.IOException;
-import java.io.InputStream;
+import java.lang.module.ModuleReader;
+import java.lang.module.ModuleReference;
+import java.lang.module.ResolvedModule;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.ByteBuffer;
+import java.security.CodeSigner;
 import java.security.CodeSource;
-import java.security.PermissionCollection;
-import java.util.Enumeration;
-import java.util.jar.Manifest;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public final class MangoLoader extends URLClassLoader {
-    public MangoLoader(URL[] urls, ClassLoader parent) {
+
+    static {
+        ClassLoader.registerAsParallelCapable();
+    }
+
+    private final Map<String, ModuleReference> moduleMap = new HashMap<>();
+    private final Map<String, ModuleReader> moduleReaderMap = new HashMap<>();
+
+    private final Map<String, ModuleReference> localPackageToModule = new HashMap<>();
+
+    public MangoLoader(URL[] urls, Set<ResolvedModule> modules, ClassLoader parent) {
         super(urls, parent);
+
+
+        modules.forEach(module -> {
+            moduleMap.put(
+                    module.name(),
+                    module.reference()
+            );
+
+            module.reference().descriptor().packages().forEach(pkg -> {
+                localPackageToModule.put(pkg, module.reference());
+            });
+        });
+
+        System.out.println("Fiinisgh");
     }
 
     @Override
     protected URL findResource(String moduleName, String name) throws IOException {
-        final var first = findResource(name);
-        if (first == null) {
-            if (getParent() instanceof URLClassLoader classLoader)
-                return classLoader.findResource(name);
+        final var module = moduleMap.get(moduleName);
+
+        if (module != null) {
+            final var uri = moduleReaderFor(module).find(name);
+            if (uri.isPresent())
+                return uri.get().toURL();
         }
 
-        return findResource(name);
-    }
 
-    @Override
-    protected Class<?> findClass(String name) throws ClassNotFoundException {
-        return super.findClass(name);
-    }
-
-    @Override
-    public URL findResource(String name) {
-        return super.findResource(name);
-    }
-
-    @Override
-    public Enumeration<URL> findResources(String name) throws IOException {
-        return super.findResources(name);
-    }
-
-
-    @Override
-    protected Package definePackage(String name, Manifest man, URL url) {
-        return super.definePackage(name, man, url);
-    }
-
-    @Override
-    protected PermissionCollection getPermissions(CodeSource codesource) {
-        return super.getPermissions(codesource);
-    }
-
-    @Override
-    public InputStream getResourceAsStream(String name) {
-        return super.getResourceAsStream(name);
-    }
-
-    @Override
-    public Class<?> loadClass(String name) throws ClassNotFoundException {
-        return super.loadClass(name);
-    }
-
-    @Override
-    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        return super.loadClass(name, resolve);
-    }
-
-    @Override
-    protected Class<?> findClass(String moduleName, String name) {
-        final var clz = super.findClass(moduleName, name);
-        if (clz == null) {
-            try {
-                return super.findClass(name);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
         return null;
     }
 
     @Override
-    public URL getResource(String name) {
-        return super.getResource(name);
+    protected Class<?> findClass(String moduleName, String name) {
+        Class<?> c = null;
+        ModuleReference loadedModule = findLoadedModule(name);
+        if (loadedModule != null && loadedModule.descriptor().name().equals(moduleName))
+            c = defineClass(name, loadedModule);
+        return c;
     }
 
-    @Override
-    public Enumeration<URL> getResources(String name) throws IOException {
-        return super.getResources(name);
+    /**
+     * Defines the given binary class name to the VM, loading the class
+     * bytes from the given module.
+     *
+     * @return the resulting Class or {@code null} if an I/O error occurs
+     */
+    private Class<?> defineClass(String cn, ModuleReference loadedModule) {
+        ModuleReader reader = moduleReaderFor(loadedModule);
+
+        try {
+            // read class file
+            String rn = cn.replace('.', '/').concat(".class");
+            ByteBuffer bb = reader.read(rn).orElse(null);
+            if (bb == null) {
+                // class not found
+                return null;
+            }
+
+            try {
+                return defineClass(cn, bb, new CodeSource(loadedModule.location().get().toURL(), (CodeSigner[]) null));
+            } finally {
+                reader.release(bb);
+            }
+
+        } catch (IOException ioe) {
+            // TBD on how I/O errors should be propagated
+            return null;
+        }
     }
 
-    @Override
-    protected String findLibrary(String libname) {
-        return super.findLibrary(libname);
+    /**
+     * Find the candidate module for the given class name.
+     * Returns {@code null} if none of the modules defined to this
+     * class loader contain the API package for the class.
+     */
+    private ModuleReference findLoadedModule(String cn) {
+        String pn = packageName(cn);
+        return pn.isEmpty() ? null : localPackageToModule.get(pn);
     }
+
+    /**
+     * Returns the package name for the given class name
+     */
+    private String packageName(String cn) {
+        int pos = cn.lastIndexOf('.');
+        return (pos < 0) ? "" : cn.substring(0, pos);
+    }
+
+    private ModuleReader moduleReaderFor(ModuleReference moduleReference) {
+        return moduleReaderMap.computeIfAbsent(moduleReference.descriptor().name(), k -> {
+            try {
+                return moduleReference.open();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
 }
