@@ -53,7 +53,7 @@ public final class ClassTransformers {
         AtomicReference<IClassTransformer> _transformer = new AtomicReference<>();
 
         for (IClassTransformer transformer : transformers) {
-            result.set(transformer.transform(originalClassData));
+            result.set(transformer.transform(name, originalClassData));
             if (result.get().flag() != TransformerFlag.NO_REWRITE) {
                 _transformer.set(transformer);
                 break;

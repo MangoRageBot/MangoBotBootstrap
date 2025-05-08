@@ -1,7 +1,7 @@
 package org.mangorage.bootstrap.api;
 
 public interface IClassTransformer {
-    TransformResult transform(byte[] classData);
+    TransformResult transform(String className, byte[] classData);
 
     String getName();
 }
