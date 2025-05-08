@@ -1,5 +1,6 @@
 package org.mangorage.bootstrap.internal;
 
+import org.mangorage.bootstrap.api.IClassTransformer;
 
 import java.io.IOException;
 import java.lang.module.ModuleReader;
@@ -9,6 +10,7 @@ import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 
 public final class MangoLoader extends URLClassLoader {
@@ -17,6 +19,7 @@ public final class MangoLoader extends URLClassLoader {
         ClassLoader.registerAsParallelCapable();
     }
 
+    private ClassTransformers transformers = new ClassTransformers(this);
     private final Map<String, LoadedModule> moduleMap = new HashMap<>();
     private final Map<String, LoadedModule> localPackageToModule = new HashMap<>();
 
@@ -41,6 +44,58 @@ public final class MangoLoader extends URLClassLoader {
         });
     }
 
+    public void loadTransformers() {
+        ServiceLoader.load(IClassTransformer.class)
+                .stream()
+                .forEach(provider -> {
+                    transformers.add(provider.get());
+                });
+    }
+
+    @Override
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+        if (transformers == null || transformers.isEmpty())
+            return super.findClass(name);
+
+        if (transformers.containsClass(name))
+            return transformers.getClazz(name);
+
+        byte[] originalBytes = getClassBytes(name);
+
+        if (originalBytes == null) {
+            throw new ClassNotFoundException("Failed to load original class bytes for " + name);
+        }
+
+        byte[] arr = transformers.transform(name);
+        if (arr != null) {
+            Class<?> clz = defineClass(name, arr);
+            transformers.add(name, clz);
+            return clz;
+        }
+
+        return super.findClass(name);
+    }
+
+    private byte[] getClassBytes(String clazz) {
+        try {
+            String className = clazz.replace('.', '/');
+            String classFileName = className + ".class";
+
+            try (var is = getResourceAsStream(classFileName)) {
+                if (is != null) return is.readAllBytes();
+            }
+        } catch (IOException e) {
+            return null;
+        }
+        return null;
+    }
+
+    private Class<?> defineClass(String name, byte[] bytes) {
+        return super.defineClass(name, bytes, 0, bytes.length);
+    }
+
+
+
     @Override
     protected URL findResource(String moduleName, String name) throws IOException {
         final var loadedModule = moduleMap.get(moduleName);
@@ -58,8 +113,11 @@ public final class MangoLoader extends URLClassLoader {
     protected Class<?> findClass(String moduleName, String name) {
         Class<?> c = null;
         LoadedModule loadedModule = findLoadedModule(name);
-        if (loadedModule != null && loadedModule.getModuleReference().descriptor().name().equals(moduleName))
+        if (loadedModule != null && loadedModule.getModuleReference().descriptor().name().equals(moduleName)) {
             c = defineClass(name, loadedModule);
+        } else if (loadedModule != null) {
+            throw new IllegalArgumentException("Expected Class '%s' in module '%s', instead was in '%s'".formatted(name, moduleName, loadedModule.getModuleReference().descriptor().name()));
+        }
         return c;
     }
 

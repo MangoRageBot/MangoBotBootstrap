@@ -46,9 +46,9 @@ public final class Bootstrap {
         final var moduleLayerController = ModuleLayer.defineModules(moduleCfg, List.of(ModuleLayer.boot()), s -> moduleCl);
         final var moduleLayer = moduleLayerController.layer();
 
-
-        System.out.println("Imagiine we worked!");
         Thread.currentThread().setContextClassLoader(moduleCl);
+
+        moduleCl.loadTransformers();
 
         callMain("org.mangorage.entrypoint.MangoBotCore", args, moduleLayer.findModule("org.mangorage.mangobotcore").get());
     }
