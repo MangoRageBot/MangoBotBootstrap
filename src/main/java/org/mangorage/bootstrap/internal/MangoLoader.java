@@ -9,10 +9,10 @@ import java.lang.module.ResolvedModule;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class MangoLoader extends URLClassLoader {
 
@@ -21,8 +21,10 @@ public final class MangoLoader extends URLClassLoader {
     }
 
     private ClassTransformers transformers = new ClassTransformers(this);
-    private final Map<String, LoadedModule> moduleMap = new HashMap<>();
-    private final Map<String, LoadedModule> localPackageToModule = new HashMap<>();
+    private final Map<String, LoadedModule> moduleMap = new ConcurrentHashMap<>();
+    private final Map<String, LoadedModule> localPackageToModule = new ConcurrentHashMap<>();
+
+
 
     public MangoLoader(URL[] urls, Set<ResolvedModule> modules, ClassLoader parent) {
         super(urls, parent);
@@ -76,46 +78,39 @@ public final class MangoLoader extends URLClassLoader {
                 });
     }
 
+    /**
+     * Loads the class with the specified binary name.
+     */
     @Override
-    protected Class<?> findClass(String name) throws ClassNotFoundException {
-        if (transformers == null || transformers.isEmpty())
-            return super.findClass(name);
+    protected Class<?> loadClass(String cn, boolean resolve) throws ClassNotFoundException
+    {
 
-        if (transformers.containsClass(name))
-            return transformers.getClazz(name);
+        synchronized (getClassLoadingLock(cn)) {
+            // check if already loaded
+            Class<?> c = findLoadedClass(cn);
 
-        byte[] originalBytes = getClassBytes(name);
+            if (c == null) {
 
-        if (originalBytes == null) {
-            throw new ClassNotFoundException("Failed to load original class bytes for " + name);
-        }
+                LoadedModule loadedModule = findLoadedModule(cn);
 
-        byte[] arr = transformers.transform(name);
-        if (arr != null) {
-            Class<?> clz = defineClass(name, arr);
-            transformers.add(name, clz);
-            return clz;
-        }
+                if (loadedModule != null) {
 
-        return super.findClass(name);
-    }
+                    // class is in module defined to this class loader
+                    c = defineClass(cn, loadedModule);
 
-    private byte[] getClassBytes(String clazz) {
-        try {
-            String className = clazz.replace('.', '/');
-            String classFileName = className + ".class";
-
-            try (var is = getResourceAsStream(classFileName)) {
-                if (is != null) return is.readAllBytes();
+                } else {
+                    return getParent().loadClass(cn);
+                }
             }
-        } catch (IOException e) {
-            return null;
-        }
-        return null;
-    }
 
-    private Class<?> defineClass(String name, byte[] bytes) {
-        return super.defineClass(name, bytes, 0, bytes.length);
+            if (c == null)
+                throw new ClassNotFoundException(cn);
+
+            if (resolve)
+                resolveClass(c);
+
+            return c;
+        }
     }
 
     @Override
@@ -129,6 +124,17 @@ public final class MangoLoader extends URLClassLoader {
         }
 
         return null;
+    }
+
+    @Override
+    protected Class<?> findClass(String cn) throws ClassNotFoundException {
+        Class<?> c = null;
+        LoadedModule loadedModule = findLoadedModule(cn);
+        if (loadedModule != null)
+            c = defineClass(cn, loadedModule);
+        if (c == null)
+            throw new ClassNotFoundException(cn);
+        return c;
     }
 
     @Override
@@ -161,12 +167,24 @@ public final class MangoLoader extends URLClassLoader {
                 return null;
             }
 
-            try {
-                return defineClass(cn, bb, loadedModule.getCodeSource());
-            } finally {
-                reader.release(bb);
-            }
+            if (transformers.containsClass(cn))
+                return transformers.getClazz(cn);
 
+            byte[] classbytes = bb.array();
+
+            byte[] classBytesModified = transformers.transform(cn, classbytes);
+
+            if (classBytesModified != null) {
+                Class<?> clz = defineClass(cn, classBytesModified, 0, classBytesModified.length, loadedModule.getCodeSource());
+                transformers.add(cn, clz);
+                return clz;
+            } else {
+                try {
+                    return defineClass(cn, bb, loadedModule.getCodeSource());
+                } finally {
+                    reader.release(bb);
+                }
+            }
         } catch (IOException ioe) {
             // TBD on how I/O errors should be propagated
             return null;

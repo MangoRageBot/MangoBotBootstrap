@@ -30,7 +30,7 @@ public final class Bootstrap {
         JarHandler.safeHandle(Path.of("libraries"), Path.of("sorted-libraries"));
 
         List<Path> deleteFiles = List.of(
-                Path.of("sorted-libraries").resolve("okio-jvm-3.6.0.jar")
+                Path.of("sorted-libraries").resolve("okio-3.6.0.jar")
         );
 
         for (Path deleteFile : deleteFiles) {

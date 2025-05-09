@@ -41,6 +41,10 @@ public final class LoadedModule implements ModuleReader {
         this.children.add(module);
     }
 
+    String name() {
+        return getModuleReference().descriptor().name();
+    }
+
     @Override
     public Optional<URI> find(String name) throws IOException {
         final var optional = getModuleReader().find(name);

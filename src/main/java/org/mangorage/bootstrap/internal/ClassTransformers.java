@@ -4,16 +4,15 @@ import org.mangorage.bootstrap.api.transformer.IClassTransformer;
 import org.mangorage.bootstrap.api.transformer.TransformResult;
 import org.mangorage.bootstrap.api.transformer.TransformerFlag;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class ClassTransformers {
-    private final Map<String, Class<?>> classes = new HashMap<>(); // Transformed Class's
-    private final List<IClassTransformer> transformers = new ArrayList<>(); // Transformer's
+    private final Map<String, Class<?>> classes = new ConcurrentHashMap<>();
+    private final List<IClassTransformer> transformers = new CopyOnWriteArrayList<>(); // Transformer's
     private final ClassLoader loader;
 
     public ClassTransformers(ClassLoader loader) {
@@ -32,28 +31,13 @@ public final class ClassTransformers {
         return transformers.isEmpty();
     }
 
-    private byte[] getClassBytes(String clazz) {
-        try {
-            String className = clazz.replace('.', '/');
-            String classFileName = className + ".class";
+    public byte[] transform(String name, byte[] classData) {;
 
-            try (var is = loader.getResourceAsStream(classFileName)) {
-                if (is != null) return is.readAllBytes();
-            }
-        } catch (IOException e) {
-            return null;
-        }
-        return null;
-    }
-
-    public byte[] transform(String name) {
-        byte[] originalClassData = getClassBytes(name);
-
-        AtomicReference<TransformResult> result = new AtomicReference<>(TransformerFlag.NO_REWRITE.of(originalClassData));
+        AtomicReference<TransformResult> result = new AtomicReference<>(TransformerFlag.NO_REWRITE.of(classData));
         AtomicReference<IClassTransformer> _transformer = new AtomicReference<>();
 
         for (IClassTransformer transformer : transformers) {
-            result.set(transformer.transform(name, originalClassData));
+            result.set(transformer.transform(name, classData));
             if (result.get().flag() != TransformerFlag.NO_REWRITE) {
                 _transformer.set(transformer);
                 break;
