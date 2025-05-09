@@ -15,22 +15,13 @@ import static org.mangorage.bootstrap.internal.Util.*;
 
 public final class Bootstrap {
 
-    private static ModuleLayer parent;
-    private static boolean set = false;
-
-    public static void setParent(ModuleLayer moduleLayer) {
-        if (set) return;
-        set = true;
-        Bootstrap.parent = moduleLayer;
-    }
-
-
-    // --launchProfile mangobot
     public static void main(String[] args) throws IOException {
+        ModuleLayer parent = null;
 
-        if (parent == null) {
-            parent = ModuleLayer.boot();
-            set = true;
+        if (Bootstrap.class.getModule() != null) {
+            parent = Bootstrap.class.getModule().getLayer();
+        } else {
+            parent = ModuleLayer.boot(); // We dont have a module for Bootstrap..., so assume we are using the boot layer...
         }
 
         final var librariesPath = Path.of("libraries");
