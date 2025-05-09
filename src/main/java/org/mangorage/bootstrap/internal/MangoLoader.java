@@ -1,6 +1,7 @@
 package org.mangorage.bootstrap.internal;
 
-import org.mangorage.bootstrap.api.IClassTransformer;
+import org.mangorage.bootstrap.api.module.IModuleConfigurator;
+import org.mangorage.bootstrap.api.transformer.IClassTransformer;
 
 import java.io.IOException;
 import java.lang.module.ModuleReader;
@@ -44,11 +45,34 @@ public final class MangoLoader extends URLClassLoader {
         });
     }
 
-    public void loadTransformers() {
+    public void load() {
+        loadTransformers();
+        loadModuleConfiguration();
+    }
+
+    void loadTransformers() {
         ServiceLoader.load(IClassTransformer.class)
                 .stream()
                 .forEach(provider -> {
                     transformers.add(provider.get());
+                });
+    }
+
+    void loadModuleConfiguration() {
+        ServiceLoader.load(IModuleConfigurator.class)
+                .stream()
+                .forEach(provider -> {
+                    final var configurator = provider.get();
+
+                    moduleMap.forEach((id, module) -> {
+                        final var children = configurator.getChildren(id);
+
+                        children
+                                .stream()
+                                .filter(moduleMap::containsKey)
+                                .map(moduleMap::get)
+                                .forEach(module::addChild);
+                    });
                 });
     }
 
@@ -94,14 +118,12 @@ public final class MangoLoader extends URLClassLoader {
         return super.defineClass(name, bytes, 0, bytes.length);
     }
 
-
-
     @Override
     protected URL findResource(String moduleName, String name) throws IOException {
         final var loadedModule = moduleMap.get(moduleName);
 
         if (loadedModule != null) {
-            final var uri = loadedModule.getModuleReader().find(name);
+            final var uri = loadedModule.find(name);
             if (uri.isPresent())
                 return uri.get().toURL();
         }
@@ -168,5 +190,4 @@ public final class MangoLoader extends URLClassLoader {
         int pos = cn.lastIndexOf('.');
         return (pos < 0) ? "" : cn.substring(0, pos);
     }
-
 }

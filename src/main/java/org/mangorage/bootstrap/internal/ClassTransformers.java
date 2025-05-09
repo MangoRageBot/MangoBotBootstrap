@@ -1,8 +1,8 @@
 package org.mangorage.bootstrap.internal;
 
-import org.mangorage.bootstrap.api.IClassTransformer;
-import org.mangorage.bootstrap.api.TransformResult;
-import org.mangorage.bootstrap.api.TransformerFlag;
+import org.mangorage.bootstrap.api.transformer.IClassTransformer;
+import org.mangorage.bootstrap.api.transformer.TransformResult;
+import org.mangorage.bootstrap.api.transformer.TransformerFlag;
 
 import java.io.IOException;
 import java.util.ArrayList;

@@ -15,6 +15,7 @@ import static org.mangorage.bootstrap.internal.Util.*;
 
 public final class Bootstrap {
 
+    // --launchProfile mangobot
     public static void main(String[] args) throws IOException {
 
         final var librariesPath = Path.of("libraries");
@@ -48,7 +49,7 @@ public final class Bootstrap {
 
         Thread.currentThread().setContextClassLoader(moduleCl);
 
-        moduleCl.loadTransformers();
+        moduleCl.load();
 
         callMain("org.mangorage.entrypoint.MangoBotCore", args, moduleLayer.findModule("org.mangorage.mangobotcore").get());
     }

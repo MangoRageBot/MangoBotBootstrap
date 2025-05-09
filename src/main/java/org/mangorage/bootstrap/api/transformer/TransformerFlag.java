@@ -1,4 +1,4 @@
-package org.mangorage.bootstrap.api;
+package org.mangorage.bootstrap.api.transformer;
 
 public enum TransformerFlag {
     NO_REWRITE,
