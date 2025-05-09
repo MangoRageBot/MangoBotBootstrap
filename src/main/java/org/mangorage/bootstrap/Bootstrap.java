@@ -15,8 +15,23 @@ import static org.mangorage.bootstrap.internal.Util.*;
 
 public final class Bootstrap {
 
+    private static ModuleLayer parent;
+    private static boolean set = false;
+
+    public static void setParent(ModuleLayer moduleLayer) {
+        if (set) return;
+        set = true;
+        Bootstrap.parent = moduleLayer;
+    }
+
+
     // --launchProfile mangobot
     public static void main(String[] args) throws IOException {
+
+        if (parent == null) {
+            parent = ModuleLayer.boot();
+            set = true;
+        }
 
         final var librariesPath = Path.of("libraries");
         final var pluginsPath = Path.of("plugins");
@@ -34,7 +49,7 @@ public final class Bootstrap {
         final var moduleCfg = Configuration.resolve(
                 ModuleFinder.of(pluginsPath),
                 List.of(
-                        ModuleLayer.boot().configuration()
+                        parent.configuration()
                 ),
                 ModuleFinder.of(
                         Path.of("sorted-libraries")
@@ -44,7 +59,7 @@ public final class Bootstrap {
 
         final var moduleCl = new MangoLoader(fetchJars(librariesPath, pluginsPath), moduleCfg.modules(), Thread.currentThread().getContextClassLoader());
 
-        final var moduleLayerController = ModuleLayer.defineModules(moduleCfg, List.of(ModuleLayer.boot()), s -> moduleCl);
+        final var moduleLayerController = ModuleLayer.defineModules(moduleCfg, List.of(parent), s -> moduleCl);
         final var moduleLayer = moduleLayerController.layer();
 
         Thread.currentThread().setContextClassLoader(moduleCl);
