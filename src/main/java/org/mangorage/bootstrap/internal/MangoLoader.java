@@ -167,24 +167,30 @@ public final class MangoLoader extends URLClassLoader {
                 return null;
             }
 
-            if (transformers.containsClass(cn))
-                return transformers.getClazz(cn);
-
-            byte[] classbytes = bb.array();
-
-            byte[] classBytesModified = transformers.transform(cn, classbytes);
-
-            if (classBytesModified != null) {
-                Class<?> clz = defineClass(cn, classBytesModified, 0, classBytesModified.length, loadedModule.getCodeSource());
-                transformers.add(cn, clz);
-                return clz;
-            } else {
-                try {
-                    return defineClass(cn, bb, loadedModule.getCodeSource());
-                } finally {
-                    reader.release(bb);
-                }
+            try {
+                return defineClass(cn, bb, loadedModule.getCodeSource());
+            } finally {
+                reader.release(bb);
             }
+
+//            if (transformers.containsClass(cn))
+//                return transformers.getClazz(cn);
+//
+//            byte[] classbytes = bb.array();
+//
+//            byte[] classBytesModified = transformers.transform(cn, classbytes);
+//
+//            if (classBytesModified != null) {
+//                Class<?> clz = defineClass(cn, classBytesModified, 0, classBytesModified.length, loadedModule.getCodeSource());
+//                transformers.add(cn, clz);
+//                return clz;
+//            } else {
+//                try {
+//                    return defineClass(cn, bb, loadedModule.getCodeSource());
+//                } finally {
+//                    reader.release(bb);
+//                }
+//            }
         } catch (IOException ioe) {
             // TBD on how I/O errors should be propagated
             return null;
