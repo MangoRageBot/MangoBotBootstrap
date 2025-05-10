@@ -30,9 +30,7 @@ public final class MangoLoader extends SecureClassLoader {
     private final Map<String, LoadedModule> moduleMap = new ConcurrentHashMap<>();
     private final Map<String, LoadedModule> localPackageToModule = new ConcurrentHashMap<>();
 
-
-
-    public MangoLoader(URL[] urls, Set<ResolvedModule> modules, ClassLoader parent) {
+    public MangoLoader(Set<ResolvedModule> modules, ClassLoader parent) {
         super(parent);
 
         modules.forEach(module -> {

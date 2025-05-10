@@ -4,48 +4,11 @@ import java.io.File;
 import java.lang.module.ModuleFinder;
 import java.lang.module.ModuleReference;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public final class Util {
-
-
-    public static URL[] fetchJars(Path... paths) {
-        return fetchJars(
-                Arrays.stream(paths)
-                        .map(Path::toFile)
-                        .toArray(File[]::new)
-        );
-    }
-
-    public static URL[] fetchJars(File[] directories) {
-        // Add your extra folder here, you glutton for suffering
-
-        List<URL> urls = new ArrayList<>();
-
-        for (File dir : directories) {
-            if (!dir.exists() || !dir.isDirectory()) continue;
-
-            File[] jarFiles = dir.listFiles((d, name) -> name.endsWith(".jar"));
-            if (jarFiles == null) continue;
-
-            for (File jar : jarFiles) {
-                try {
-                    urls.add(jar.toURI().toURL());
-                } catch (MalformedURLException e) {
-                    throw new RuntimeException("Malformed URL while processing: " + jar.getAbsolutePath(), e);
-                }
-            }
-        }
-
-        return urls.toArray(URL[]::new);
-    }
 
     public static Set<String> getModuleNames(Path folder) {
         final Set<String> moduleNames = new HashSet<>();

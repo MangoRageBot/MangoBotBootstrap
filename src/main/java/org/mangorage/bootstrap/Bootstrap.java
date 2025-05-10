@@ -48,7 +48,7 @@ public final class Bootstrap {
                 Util.getModuleNames(pluginsPath)
         );
 
-        final var moduleCl = new MangoLoader(fetchJars(librariesPath, pluginsPath), moduleCfg.modules(), Thread.currentThread().getContextClassLoader());
+        final var moduleCl = new MangoLoader(moduleCfg.modules(), Thread.currentThread().getContextClassLoader());
 
         final var moduleLayerController = ModuleLayer.defineModules(moduleCfg, List.of(parent), s -> moduleCl);
         final var moduleLayer = moduleLayerController.layer();
