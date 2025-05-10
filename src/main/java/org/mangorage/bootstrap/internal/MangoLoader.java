@@ -78,40 +78,40 @@ public final class MangoLoader extends URLClassLoader {
                 });
     }
 
-    /**
-     * Loads the class with the specified binary name.
-     */
-    @Override
-    protected Class<?> loadClass(String cn, boolean resolve) throws ClassNotFoundException
-    {
-
-        synchronized (getClassLoadingLock(cn)) {
-            // check if already loaded
-            Class<?> c = findLoadedClass(cn);
-
-            if (c == null) {
-
-                LoadedModule loadedModule = findLoadedModule(cn);
-
-                if (loadedModule != null) {
-
-                    // class is in module defined to this class loader
-                    c = defineClass(cn, loadedModule);
-
-                } else {
-                    return getParent().loadClass(cn);
-                }
-            }
-
-            if (c == null)
-                throw new ClassNotFoundException(cn);
-
-            if (resolve)
-                resolveClass(c);
-
-            return c;
-        }
-    }
+//    /**
+//     * Loads the class with the specified binary name.
+//     */
+//    @Override
+//    protected Class<?> loadClass(String cn, boolean resolve) throws ClassNotFoundException
+//    {
+//
+//        synchronized (getClassLoadingLock(cn)) {
+//            // check if already loaded
+//            Class<?> c = findLoadedClass(cn);
+//
+//            if (c == null) {
+//
+//                LoadedModule loadedModule = findLoadedModule(cn);
+//
+//                if (loadedModule != null) {
+//
+//                    // class is in module defined to this class loader
+//                    c = defineClass(cn, loadedModule);
+//
+//                } else {
+//                    return getParent().loadClass(cn);
+//                }
+//            }
+//
+//            if (c == null)
+//                throw new ClassNotFoundException(cn);
+//
+//            if (resolve)
+//                resolveClass(c);
+//
+//            return c;
+//        }
+//    }
 
     @Override
     protected URL findResource(String moduleName, String name) throws IOException {
