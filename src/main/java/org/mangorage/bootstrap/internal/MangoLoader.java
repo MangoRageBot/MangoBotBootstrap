@@ -4,17 +4,23 @@ import org.mangorage.bootstrap.api.module.IModuleConfigurator;
 import org.mangorage.bootstrap.api.transformer.IClassTransformer;
 
 import java.io.IOException;
+import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleReader;
+import java.lang.module.ModuleReference;
 import java.lang.module.ResolvedModule;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
+import java.security.SecureClassLoader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class MangoLoader extends URLClassLoader {
+public final class MangoLoader extends SecureClassLoader {
 
     static {
         ClassLoader.registerAsParallelCapable();
@@ -27,7 +33,7 @@ public final class MangoLoader extends URLClassLoader {
 
 
     public MangoLoader(URL[] urls, Set<ResolvedModule> modules, ClassLoader parent) {
-        super(urls, parent);
+        super(parent);
 
         modules.forEach(module -> {
             try {
@@ -112,6 +118,72 @@ public final class MangoLoader extends URLClassLoader {
             return c;
         }
     }
+
+    @Override
+    public URL findResource(String name) {
+        String pn = toPackageName(name);
+        LoadedModule module = localPackageToModule.get(pn);
+
+        if (module != null) {
+            try {
+                URL url = findResource(module.name(), name);
+                if (url != null
+                        && (name.endsWith(".class")
+                        || url.toString().endsWith("/")
+                        || isOpen(module.getModuleReference(), pn))) {
+                    return url;
+                }
+            } catch (IOException ioe) {
+                // ignore
+            }
+
+        } else {
+            for (LoadedModule mref : moduleMap.values()) {
+                try {
+                    URL url = findResource(mref.name(), name);
+                    if (url != null) return url;
+                } catch (IOException ioe) {
+                    // ignore
+                }
+            }
+        }
+
+        return null;
+    }
+
+    @Override
+    protected Enumeration<URL> findResources(String name) throws IOException {
+        return Collections.enumeration(findResourcesAsList(name));
+    }
+
+    /**
+     * Finds the resources with the given name in this class loader.
+     */
+    private List<URL> findResourcesAsList(String name) throws IOException {
+        String pn = toPackageName(name);
+        LoadedModule module = localPackageToModule.get(pn);
+        if (module != null) {
+            URL url = findResource(module.name(), name);
+            if (url != null
+                    && (name.endsWith(".class")
+                    || url.toString().endsWith("/")
+                    || isOpen(module.getModuleReference(), pn))) {
+                return List.of(url);
+            } else {
+                return Collections.emptyList();
+            }
+        } else {
+            List<URL> urls = new ArrayList<>();
+            for (LoadedModule mref : moduleMap.values()) {
+                URL url = findResource(mref.name(), name);
+                if (url != null) {
+                    urls.add(url);
+                }
+            }
+            return urls;
+        }
+    }
+
 
     @Override
     protected URL findResource(String moduleName, String name) throws IOException {
@@ -207,5 +279,41 @@ public final class MangoLoader extends URLClassLoader {
     private String packageName(String cn) {
         int pos = cn.lastIndexOf('.');
         return (pos < 0) ? "" : cn.substring(0, pos);
+    }
+
+    /**
+     * Derive a <em>package name</em> for a resource. The package name
+     * returned by this method may not be a legal package name. This method
+     * returns null if the resource name ends with a "/" (a directory)
+     * or the resource name does not contain a "/".
+     */
+    public static String toPackageName(String name) {
+        int index = name.lastIndexOf('/');
+        if (index == -1 || index == name.length()-1) {
+            return "";
+        } else {
+            return name.substring(0, index).replace('/', '.');
+        }
+    }
+
+    /**
+     * Returns true if the given module opens the given package
+     * unconditionally.
+     *
+     * @implNote This method currently iterates over each of the open
+     * packages. This will be replaced once the ModuleDescriptor.Opens
+     * API is updated.
+     */
+    private boolean isOpen(ModuleReference mref, String pn) {
+        ModuleDescriptor descriptor = mref.descriptor();
+        if (descriptor.isOpen() || descriptor.isAutomatic())
+            return true;
+        for (ModuleDescriptor.Opens opens : descriptor.opens()) {
+            String source = opens.source();
+            if (!opens.isQualified() && source.equals(pn)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
