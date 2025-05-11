@@ -59,15 +59,15 @@ public final class Bootstrap {
                 List.of(parent),
                 Thread.currentThread().getContextClassLoader()
         );
+        final var moduleLayer = moduleLayerController.layer();
 
         final Map<String, ILaunchTarget> launchTargetMap = new HashMap<>();
 
-        ServiceLoader.load(ILaunchTarget.class)
+        ServiceLoader.load(moduleLayer, ILaunchTarget.class)
                 .stream()
                 .forEach(provider -> {
                     final var target = provider.get();
                     launchTargetMap.put(target.getId(), target);
-
                 });
 
         // Only add if we dont have any other launch targets...
