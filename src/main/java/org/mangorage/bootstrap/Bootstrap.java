@@ -1,21 +1,31 @@
 package org.mangorage.bootstrap;
 
-import org.mangorage.bootstrap.internal.JarHandler;
-import org.mangorage.bootstrap.internal.MangoLoader;
+import org.mangorage.bootstrap.api.launch.ILaunchTarget;
 import org.mangorage.bootstrap.internal.Util;
-
-import java.io.IOException;
+import org.mangorage.bootstrap.internal.impl.MangoBotLaunchTarget;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
-
-import static org.mangorage.bootstrap.internal.Util.*;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.Set;
 
 public final class Bootstrap {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Throwable {
+        if (!(args.length >= 2)) {
+            throw new IllegalStateException("Need to define a launchTarget, --launchTarget mangobot");
+        }
+
+        if (!args[0].equals("--launchTarget")) {
+            throw new IllegalStateException("Need to have --launchTarget be defined first...");
+        }
+
+        final var launchTarget = args[1];
+
         ModuleLayer parent = null;
 
         if (Bootstrap.class.getModule() != null) {
@@ -24,39 +34,52 @@ public final class Bootstrap {
             parent = ModuleLayer.boot(); // We dont have a module for Bootstrap..., so assume we are using the boot layer...
         }
 
-        final var librariesPath = Path.of("libraries");
-        final var pluginsPath = Path.of("plugins");
-
-        JarHandler.safeHandle(Path.of("libraries"), Path.of("sorted-libraries"));
-
-        List<Path> deleteFiles = List.of(
-                Path.of("sorted-libraries").resolve("okio-3.6.0.jar")
+        // Where additional launch targets can be defined...
+        Path launchPath = Path.of(
+                "launch"
         );
 
-        for (Path deleteFile : deleteFiles) {
-            Files.deleteIfExists(deleteFile);
+        final var moduleCfg = Configuration
+                .resolveAndBind(
+                        ModuleFinder.of(
+                                launchPath
+                        ),
+                        List.of(
+                                parent.configuration()
+                        ),
+                        ModuleFinder.of(),
+                        Files.exists(launchPath) ?
+                        Util.getModuleNames(
+                                launchPath
+                        ) : Set.of()
+                );
+
+        final var moduleLayerController = ModuleLayer.defineModulesWithOneLoader(
+                moduleCfg,
+                List.of(parent),
+                Thread.currentThread().getContextClassLoader()
+        );
+
+        final Map<String, ILaunchTarget> launchTargetMap = new HashMap<>();
+        ServiceLoader.load(ILaunchTarget.class)
+                .stream()
+                .forEach(provider -> {
+                    if (provider.type() != MangoBotLaunchTarget.class) {
+                        final var target = provider.get();
+                        launchTargetMap.put(target.getId(), target);
+                    }
+                });
+
+        // Only add if we dont have any other launch targets...
+        if (launchTargetMap.isEmpty()) {
+            final var defaultLaunchTarget = new MangoBotLaunchTarget();
+            launchTargetMap.put(defaultLaunchTarget.getId(), defaultLaunchTarget);
         }
 
-        final var moduleCfg = Configuration.resolve(
-                ModuleFinder.of(pluginsPath),
-                List.of(
-                        parent.configuration()
-                ),
-                ModuleFinder.of(
-                        Path.of("sorted-libraries")
-                ),
-                Util.getModuleNames(pluginsPath)
-        );
+        if (!launchTargetMap.containsKey(launchTarget)) {
+            throw new IllegalStateException("Cant find launch target '%s'".formatted(launchTarget));
+        }
 
-        final var moduleCl = new MangoLoader(moduleCfg.modules(), Thread.currentThread().getContextClassLoader());
-
-        final var moduleLayerController = ModuleLayer.defineModules(moduleCfg, List.of(parent), s -> moduleCl);
-        final var moduleLayer = moduleLayerController.layer();
-
-        Thread.currentThread().setContextClassLoader(moduleCl);
-
-        moduleCl.load();
-
-        callMain("org.mangorage.entrypoint.MangoBotCore", args, moduleLayer.findModule("org.mangorage.mangobotcore").get());
+        launchTargetMap.get(launchTarget).launch(parent, args);
     }
 }

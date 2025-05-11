@@ -5,7 +5,11 @@ module org.mangorage.bootstrap {
     opens org.mangorage.bootstrap;
     exports org.mangorage.bootstrap.api.transformer;
     exports org.mangorage.bootstrap.api.module;
+    exports org.mangorage.bootstrap.api.launch;
 
     uses org.mangorage.bootstrap.api.transformer.IClassTransformer;
     uses org.mangorage.bootstrap.api.module.IModuleConfigurator;
+    uses org.mangorage.bootstrap.api.launch.ILaunchTarget;
+
+    provides org.mangorage.bootstrap.api.launch.ILaunchTarget with org.mangorage.bootstrap.internal.impl.MangoBotLaunchTarget;
 }
