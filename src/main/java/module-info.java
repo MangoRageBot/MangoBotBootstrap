@@ -10,6 +10,4 @@ module org.mangorage.bootstrap {
     uses org.mangorage.bootstrap.api.transformer.IClassTransformer;
     uses org.mangorage.bootstrap.api.module.IModuleConfigurator;
     uses org.mangorage.bootstrap.api.launch.ILaunchTarget;
-
-    provides org.mangorage.bootstrap.api.launch.ILaunchTarget with org.mangorage.bootstrap.internal.impl.MangoBotLaunchTarget;
 }
