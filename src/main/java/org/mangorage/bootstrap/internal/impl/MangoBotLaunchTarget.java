@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.mangorage.bootstrap.internal.Util.callMain;
@@ -62,22 +63,23 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
 
         Thread.currentThread().setContextClassLoader(moduleCL);
 
-        moduleLayerController.addExports(
-                moduleLayer.findModule("org.spongepowered.mixin").get(),
-                "org.spongepowered.asm.mixin.transformer",
-                moduleLayer.findModule("org.mangorage.mangobotcore").get()
+        addExports(
+                moduleLayerController,
+                moduleLayer.findModule("org.spongepowered.mixin"),
+                moduleLayer.findModule("org.mangorage.mangobotmixin"),
+                List.of(
+                        "org.spongepowered.asm.mixin.transformer",
+                        "org.spongepowered.asm.transformers"
+                )
         );
 
-        moduleLayerController.addOpens(
-                moduleLayer.findModule("org.spongepowered.mixin").get(),
-                "org.spongepowered.asm.mixin",
-                moduleLayer.findModule("org.mangorage.mangobotcore").get()
-        );
-
-        moduleLayerController.addExports(
-                moduleLayer.findModule("org.spongepowered.mixin").get(),
-                "org.spongepowered.asm.transformers",
-                moduleLayer.findModule("org.mangorage.mangobotcore").get()
+        addOpens(
+                moduleLayerController,
+                moduleLayer.findModule("org.spongepowered.mixin"),
+                moduleLayer.findModule("org.mangorage.mangobotmixin"),
+                List.of(
+                        "org.spongepowered.asm.mixin"
+                )
         );
 
         // "--add-exports", "org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer=org.mangorage.mangobotcore", "--add-opens", "org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer=org.mangorage.mangobotcore"
@@ -87,4 +89,19 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
         callMain("org.mangorage.entrypoint.MangoBotCore", args, moduleLayer.findModule("org.mangorage.mangobotcore").get());
     }
 
+    public static void addExports(ModuleLayer.Controller controller, Optional<Module> source, Optional<Module> target, List<String> packages) {
+        if (source.isPresent() && target.isPresent()) {
+            packages.forEach(pkg -> {
+                controller.addExports(source.get(), pkg, target.get());
+            });
+        }
+    }
+
+    public static void addOpens(ModuleLayer.Controller controller, Optional<Module> source, Optional<Module> target, List<String> packages) {
+        if (source.isPresent() && target.isPresent()) {
+            packages.forEach(pkg -> {
+                controller.addOpens(source.get(), pkg, target.get());
+            });
+        }
+    }
 }
