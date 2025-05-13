@@ -75,6 +75,17 @@ jar {
     }
 }
 
+tasks.register('runMain', JavaExec) {
+    setWorkingDir("C:\\Users\\andre\\Desktop\\minecraft_test")
+
+
+    group = 'application'
+    description = 'Runs the main class.'
+
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass.set('org.mangorage.bootstrap.Bootstrap') // replace this garbage with your actual main class
+}
+
 publishing {
     publications.register("mangobotaddon", MavenPublication) {
         artifactId = 'mangobotbootstrap'

@@ -30,9 +30,10 @@ public final class Bootstrap {
 
         if (Bootstrap.class.getModule() != null) {
             parent = Bootstrap.class.getModule().getLayer();
-        } else {
-            parent = ModuleLayer.boot(); // We dont have a module for Bootstrap..., so assume we are using the boot layer...
         }
+
+        if (parent == null)
+            parent = ModuleLayer.boot();
 
         // Where additional launch targets can be defined...
         Path launchPath = Path.of(
@@ -81,5 +82,7 @@ public final class Bootstrap {
         }
 
         launchTargetMap.get(launchTarget).launch(parent, args);
+
+        var a = 1;
     }
 }

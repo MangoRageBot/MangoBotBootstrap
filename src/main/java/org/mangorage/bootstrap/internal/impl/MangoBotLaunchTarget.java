@@ -2,14 +2,16 @@ package org.mangorage.bootstrap.internal.impl;
 
 import org.mangorage.bootstrap.api.launch.ILaunchTarget;
 import org.mangorage.bootstrap.internal.JarHandler;
-import org.mangorage.bootstrap.internal.MangoLoader;
+import org.mangorage.bootstrap.api.loader.MangoLoader;
 import org.mangorage.bootstrap.internal.Util;
 
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.mangorage.bootstrap.internal.Util.callMain;
 
@@ -22,58 +24,67 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
     @Override
     public void launch(ModuleLayer parent, String[] args) throws Throwable {
         final var librariesPath = Path.of("libraries");
-        final var sortedLibraries = Path.of("sorted-libraries");
+        final var sortedLibrariesPath = Path.of("sorted-libraries");
         final var pluginsPath = Path.of("plugins");
 
-        JarHandler.safeHandle(librariesPath, sortedLibraries);
+        JarHandler.safeHandle(librariesPath, sortedLibrariesPath);
 
         List<Path> deleteFiles = List.of(
-               sortedLibraries.resolve("okio-3.6.0.jar")
+               sortedLibrariesPath.resolve("okio-3.6.0.jar")
         );
 
         for (Path deleteFile : deleteFiles) {
             Files.deleteIfExists(deleteFile);
         }
 
-        final var moduleLibrariesCfg = Configuration.resolve(
-                ModuleFinder.of(sortedLibraries),
+        Set<String> moduleNames = new HashSet<>();
+        moduleNames.addAll(Util.getModuleNames(pluginsPath));
+        moduleNames.addAll(Util.getModuleNames(sortedLibrariesPath));
+
+
+        final var moduleCfg = Configuration.resolve(
+                ModuleFinder.of(
+                        sortedLibrariesPath
+                ),
                 List.of(
                         parent.configuration()
                 ),
-                ModuleFinder.of(),
-                Util.getModuleNames(
-                        sortedLibraries
-                )
-        );
-
-        final var moduleLibrariesCL = new MangoLoader(moduleLibrariesCfg.modules(), Thread.currentThread().getContextClassLoader());
-
-        final var moduleLibrariesLayerController = ModuleLayer.defineModules(moduleLibrariesCfg, List.of(parent), s -> moduleLibrariesCL);
-        final var moduleLibrariesLayer = moduleLibrariesLayerController.layer();
-
-
-
-        final var modulePluginsCfg = Configuration.resolve(
-                ModuleFinder.of(pluginsPath),
-                List.of(
-                        moduleLibrariesLayer.configuration()
-                ),
-                ModuleFinder.of(),
-                Util.getModuleNames(
+                ModuleFinder.of(
                         pluginsPath
-                )
+                ),
+                moduleNames
         );
 
-        final var modulePluginsCL = new MangoLoader(modulePluginsCfg.modules(), moduleLibrariesCL);
+        final var moduleCL = new MangoLoader(moduleCfg.modules(), Thread.currentThread().getContextClassLoader());
 
-        final var modulePluginsLayerController = ModuleLayer.defineModules(modulePluginsCfg, List.of(moduleLibrariesLayer), s -> modulePluginsCL);
-        final var modulePluginsLayer = modulePluginsLayerController.layer();
+        final var moduleLayerController = ModuleLayer.defineModules(moduleCfg, List.of(parent), s -> moduleCL);
+        final var moduleLayer = moduleLayerController.layer();
 
-        Thread.currentThread().setContextClassLoader(modulePluginsCL);
+        Thread.currentThread().setContextClassLoader(moduleCL);
 
-        moduleLibrariesCL.load();
-        modulePluginsCL.load();
+        moduleLayerController.addExports(
+                moduleLayer.findModule("org.spongepowered.mixin").get(),
+                "org.spongepowered.asm.mixin.transformer",
+                moduleLayer.findModule("org.mangorage.mangobotcore").get()
+        );
 
-        callMain("org.mangorage.entrypoint.MangoBotCore", args, modulePluginsLayer.findModule("org.mangorage.mangobotcore").get());
+        moduleLayerController.addOpens(
+                moduleLayer.findModule("org.spongepowered.mixin").get(),
+                "org.spongepowered.asm.mixin",
+                moduleLayer.findModule("org.mangorage.mangobotcore").get()
+        );
+
+        moduleLayerController.addExports(
+                moduleLayer.findModule("org.spongepowered.mixin").get(),
+                "org.spongepowered.asm.transformers",
+                moduleLayer.findModule("org.mangorage.mangobotcore").get()
+        );
+
+        // "--add-exports", "org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer=org.mangorage.mangobotcore", "--add-opens", "org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer=org.mangorage.mangobotcore"
+
+        moduleCL.load();
+
+        callMain("org.mangorage.entrypoint.MangoBotCore", args, moduleLayer.findModule("org.mangorage.mangobotcore").get());
     }
+
 }

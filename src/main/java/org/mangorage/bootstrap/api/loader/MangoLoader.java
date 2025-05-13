@@ -1,9 +1,12 @@
-package org.mangorage.bootstrap.internal;
+package org.mangorage.bootstrap.api.loader;
 
 import org.mangorage.bootstrap.api.module.IModuleConfigurator;
 import org.mangorage.bootstrap.api.transformer.IClassTransformer;
+import org.mangorage.bootstrap.internal.ClassTransformers;
+import org.mangorage.bootstrap.internal.LoadedModule;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleReader;
 import java.lang.module.ModuleReference;
@@ -80,6 +83,11 @@ public final class MangoLoader extends SecureClassLoader {
                                 .forEach(module::addChild);
                     });
                 });
+    }
+
+    public boolean hasClass(final String name) {
+        final String canonicalName = name.replace('/', '.');
+        return this.findLoadedClass(canonicalName) != null;
     }
 
     /**
@@ -217,6 +225,35 @@ public final class MangoLoader extends SecureClassLoader {
             throw new IllegalArgumentException("Expected Class '%s' in module '%s', instead was in '%s'".formatted(name, moduleName, loadedModule.getModuleReference().descriptor().name()));
         }
         return c;
+    }
+
+    public byte[] getClassBytes(String cn) {
+        LoadedModule loadedModule = findLoadedModule(cn);
+        if (loadedModule != null) {
+            ModuleReader reader = loadedModule.getModuleReader();
+            String rn = cn.replace('.', '/').concat(".class");
+            ByteBuffer bb;
+            try {
+                bb = reader.read(rn).orElse(null);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            if (bb == null) {
+                // class not found
+                return null;
+            }
+            return bb.array();
+        }
+
+        String path = cn.replace('.', '/') + ".class";
+        try (InputStream is = getParent().getResourceAsStream(path)) {
+            if (is == null) {
+                throw new IOException("Could not find class resource: " + path);
+            }
+            return is.readAllBytes(); // Java 9+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
