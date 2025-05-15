@@ -63,8 +63,12 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
         addExports(
                 moduleLayerController,
                 moduleLayer.findModule("org.spongepowered.mixin"),
-                moduleLayer.findModule("org.mangorage.mangobotmixin"),
                 List.of(
+                        moduleLayer.findModule("org.mangorage.mangobotmixin"),
+                        moduleLayer.findModule("mixinextras.common")
+                ),
+                List.of(
+                        "org.spongepowered.asm.mixin.transformer.ext.extensions",
                         "org.spongepowered.asm.mixin.transformer",
                         "org.spongepowered.asm.transformers"
                 )
@@ -73,8 +77,14 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
         addOpens(
                 moduleLayerController,
                 moduleLayer.findModule("org.spongepowered.mixin"),
-                moduleLayer.findModule("org.mangorage.mangobotmixin"),
                 List.of(
+                        moduleLayer.findModule("org.mangorage.mangobotmixin"),
+                        moduleLayer.findModule("mixinextras.common")
+                ),
+                List.of(
+                        "org.spongepowered.asm.mixin.transformer",
+                        "org.spongepowered.asm.mixin.transformer.ext",
+                        "org.spongepowered.asm.mixin.injection.struct",
                         "org.spongepowered.asm.mixin"
                 )
         );
@@ -86,19 +96,29 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
         callMain("org.mangorage.entrypoint.MangoBotCore", args, moduleLayer.findModule("org.mangorage.mangobotcore").get());
     }
 
-    static void addExports(ModuleLayer.Controller controller, Optional<Module> source, Optional<Module> target, List<String> packages) {
-        if (source.isPresent() && target.isPresent()) {
-            packages.forEach(pkg -> {
-                controller.addExports(source.get(), pkg, target.get());
-            });
-        }
+    static void addExports(ModuleLayer.Controller controller, Optional<Module> source, List<Optional<Module>> targets, List<String> packages) {
+        if (source.isEmpty() || targets.isEmpty()) return;
+        targets.forEach(target -> {
+            target.ifPresent(module -> packages.forEach(pkg -> {
+                controller.addExports(
+                        source.get(),
+                        pkg,
+                        module
+                );
+            }));
+        });
     }
 
-    static void addOpens(ModuleLayer.Controller controller, Optional<Module> source, Optional<Module> target, List<String> packages) {
-        if (source.isPresent() && target.isPresent()) {
-            packages.forEach(pkg -> {
-                controller.addOpens(source.get(), pkg, target.get());
-            });
-        }
+    static void addOpens(ModuleLayer.Controller controller, Optional<Module> source, List<Optional<Module>> targets, List<String> packages) {
+        if (source.isEmpty() || targets.isEmpty()) return;
+        targets.forEach(target -> {
+            target.ifPresent(module -> packages.forEach(pkg -> {
+                controller.addOpens(
+                        source.get(),
+                        pkg,
+                        module
+                );
+            }));
+        });
     }
 }
