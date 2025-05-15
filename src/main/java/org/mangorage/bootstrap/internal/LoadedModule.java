@@ -18,29 +18,29 @@ public final class LoadedModule implements ModuleReader {
     private final ModuleReader moduleReader;
     private final CodeSource codeSource;
 
-    public LoadedModule(ModuleReference moduleReference) throws IOException {
+    LoadedModule(ModuleReference moduleReference) throws IOException {
         this.moduleReference = moduleReference;
         this.moduleReader = moduleReference.open();
         this.codeSource = new CodeSource(moduleReference.location().get().toURL(), (CodeSigner[]) null);
     }
 
-    public ModuleReference getModuleReference() {
+    ModuleReference getModuleReference() {
         return moduleReference;
     }
 
-    public ModuleReader getModuleReader() {
+    ModuleReader getModuleReader() {
         return moduleReader;
     }
 
-    public CodeSource getCodeSource() {
+    CodeSource getCodeSource() {
         return codeSource;
     }
 
-    public void addChild(LoadedModule module) {
+    void addChild(LoadedModule module) {
         this.children.add(module);
     }
 
-    public String name() {
+    String name() {
         return getModuleReference().descriptor().name();
     }
 

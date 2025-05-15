@@ -15,23 +15,23 @@ public final class ClassTransformers {
     private final List<IClassTransformer> transformers = new CopyOnWriteArrayList<>(); // Transformer's
     private final ClassLoader loader;
 
-    public ClassTransformers(ClassLoader loader) {
+    ClassTransformers(ClassLoader loader) {
         this.loader = loader;
     }
 
-    public void add(String name, Class<?> clz) {
+    void add(String name, Class<?> clz) {
         classes.put(name, clz);
     }
 
-    public void add(IClassTransformer transformer) {
+    void add(IClassTransformer transformer) {
         transformers.add(transformer);
     }
 
-    public boolean isEmpty() {
+    boolean isEmpty() {
         return transformers.isEmpty();
     }
 
-    public byte[] transform(String name, byte[] classData) {;
+    byte[] transform(String name, byte[] classData) {;
 
         AtomicReference<TransformResult> result = new AtomicReference<>(TransformerFlag.NO_REWRITE.of(classData));
         AtomicReference<IClassTransformer> _transformer = new AtomicReference<>();
@@ -52,11 +52,11 @@ public final class ClassTransformers {
         return null;
     }
 
-    public boolean containsClass(String name) {
+    boolean containsClass(String name) {
         return classes.containsKey(name);
     }
 
-    public Class<?> getClazz(String string) {
+    Class<?> getClazz(String string) {
         return classes.get(string);
     }
 }

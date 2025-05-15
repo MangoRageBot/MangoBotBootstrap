@@ -15,7 +15,7 @@ import java.util.zip.ZipEntry;
 
 public final class JarHandler {
 
-    public static void safeHandle(final Path source, final Path target) {
+    static void safeHandle(final Path source, final Path target) {
         try {
             handle(source, target);
         } catch (IOException e) {
@@ -23,7 +23,7 @@ public final class JarHandler {
         }
     }
 
-    public static void handle(final Path source, final Path target) throws IOException {
+    static void handle(final Path source, final Path target) throws IOException {
 
         if (Files.exists(target)) {
             deleteDirectory(target);

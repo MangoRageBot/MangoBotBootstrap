@@ -1,9 +1,8 @@
-package org.mangorage.bootstrap.api.loader;
+package org.mangorage.bootstrap.internal;
 
+import org.mangorage.bootstrap.api.loader.IMangoLoader;
 import org.mangorage.bootstrap.api.module.IModuleConfigurator;
 import org.mangorage.bootstrap.api.transformer.IClassTransformer;
-import org.mangorage.bootstrap.internal.ClassTransformers;
-import org.mangorage.bootstrap.internal.LoadedModule;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,7 +22,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class MangoLoader extends SecureClassLoader {
+public final class MangoLoaderImpl extends SecureClassLoader implements IMangoLoader {
 
     static {
         ClassLoader.registerAsParallelCapable();
@@ -33,7 +32,7 @@ public final class MangoLoader extends SecureClassLoader {
     private final Map<String, LoadedModule> moduleMap = new ConcurrentHashMap<>();
     private final Map<String, LoadedModule> localPackageToModule = new ConcurrentHashMap<>();
 
-    public MangoLoader(Set<ResolvedModule> modules, ClassLoader parent) {
+    public MangoLoaderImpl(Set<ResolvedModule> modules, ClassLoader parent) {
         super(parent);
 
         modules.forEach(module -> {
@@ -54,7 +53,7 @@ public final class MangoLoader extends SecureClassLoader {
         });
     }
 
-    public void load() {
+    void load() {
         loadTransformers();
         loadModuleConfiguration();
     }
@@ -85,6 +84,7 @@ public final class MangoLoader extends SecureClassLoader {
                 });
     }
 
+    @Override
     public boolean hasClass(final String name) {
         final String canonicalName = name.replace('/', '.');
         return this.findLoadedClass(canonicalName) != null;
@@ -227,6 +227,7 @@ public final class MangoLoader extends SecureClassLoader {
         return c;
     }
 
+    @Override
     public byte[] getClassBytes(String cn) {
         LoadedModule loadedModule = findLoadedModule(cn);
         if (loadedModule != null) {
@@ -322,7 +323,7 @@ public final class MangoLoader extends SecureClassLoader {
      * returns null if the resource name ends with a "/" (a directory)
      * or the resource name does not contain a "/".
      */
-    public static String toPackageName(String name) {
+    private static String toPackageName(String name) {
         int index = name.lastIndexOf('/');
         if (index == -1 || index == name.length()-1) {
             return "";

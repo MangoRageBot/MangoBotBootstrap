@@ -1,9 +1,6 @@
-package org.mangorage.bootstrap.internal.impl;
+package org.mangorage.bootstrap.internal;
 
 import org.mangorage.bootstrap.api.launch.ILaunchTarget;
-import org.mangorage.bootstrap.internal.JarHandler;
-import org.mangorage.bootstrap.api.loader.MangoLoader;
-import org.mangorage.bootstrap.internal.Util;
 
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
@@ -56,7 +53,7 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
                 moduleNames
         );
 
-        final var moduleCL = new MangoLoader(moduleCfg.modules(), Thread.currentThread().getContextClassLoader());
+        final var moduleCL = new MangoLoaderImpl(moduleCfg.modules(), Thread.currentThread().getContextClassLoader());
 
         final var moduleLayerController = ModuleLayer.defineModules(moduleCfg, List.of(parent), s -> moduleCL);
         final var moduleLayer = moduleLayerController.layer();
@@ -89,7 +86,7 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
         callMain("org.mangorage.entrypoint.MangoBotCore", args, moduleLayer.findModule("org.mangorage.mangobotcore").get());
     }
 
-    public static void addExports(ModuleLayer.Controller controller, Optional<Module> source, Optional<Module> target, List<String> packages) {
+    static void addExports(ModuleLayer.Controller controller, Optional<Module> source, Optional<Module> target, List<String> packages) {
         if (source.isPresent() && target.isPresent()) {
             packages.forEach(pkg -> {
                 controller.addExports(source.get(), pkg, target.get());
@@ -97,7 +94,7 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
         }
     }
 
-    public static void addOpens(ModuleLayer.Controller controller, Optional<Module> source, Optional<Module> target, List<String> packages) {
+    static void addOpens(ModuleLayer.Controller controller, Optional<Module> source, Optional<Module> target, List<String> packages) {
         if (source.isPresent() && target.isPresent()) {
             packages.forEach(pkg -> {
                 controller.addOpens(source.get(), pkg, target.get());

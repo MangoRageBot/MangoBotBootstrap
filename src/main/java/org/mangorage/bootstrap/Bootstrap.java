@@ -2,7 +2,7 @@ package org.mangorage.bootstrap;
 
 import org.mangorage.bootstrap.api.launch.ILaunchTarget;
 import org.mangorage.bootstrap.internal.Util;
-import org.mangorage.bootstrap.internal.impl.MangoBotLaunchTarget;
+import org.mangorage.bootstrap.internal.MangoBotLaunchTarget;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
