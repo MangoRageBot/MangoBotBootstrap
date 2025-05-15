@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.mangorage.bootstrap.internal.Util.callMain;
@@ -60,65 +59,8 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
 
         Thread.currentThread().setContextClassLoader(moduleCL);
 
-        addExports(
-                moduleLayerController,
-                moduleLayer.findModule("org.spongepowered.mixin"),
-                List.of(
-                        moduleLayer.findModule("org.mangorage.mangobotmixin"),
-                        moduleLayer.findModule("mixinextras.common")
-                ),
-                List.of(
-                        "org.spongepowered.asm.mixin.transformer.ext.extensions",
-                        "org.spongepowered.asm.mixin.transformer",
-                        "org.spongepowered.asm.transformers"
-                )
-        );
-
-        addOpens(
-                moduleLayerController,
-                moduleLayer.findModule("org.spongepowered.mixin"),
-                List.of(
-                        moduleLayer.findModule("org.mangorage.mangobotmixin"),
-                        moduleLayer.findModule("mixinextras.common")
-                ),
-                List.of(
-                        "org.spongepowered.asm.mixin.transformer",
-                        "org.spongepowered.asm.mixin.transformer.ext",
-                        "org.spongepowered.asm.mixin.injection.struct",
-                        "org.spongepowered.asm.mixin"
-                )
-        );
-
-        // "--add-exports", "org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer=org.mangorage.mangobotcore", "--add-opens", "org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer=org.mangorage.mangobotcore"
-
-        moduleCL.load();
+        moduleCL.load(moduleLayer, moduleLayerController);
 
         callMain("org.mangorage.entrypoint.MangoBotCore", args, moduleLayer.findModule("org.mangorage.mangobotcore").get());
-    }
-
-    static void addExports(ModuleLayer.Controller controller, Optional<Module> source, List<Optional<Module>> targets, List<String> packages) {
-        if (source.isEmpty() || targets.isEmpty()) return;
-        targets.forEach(target -> {
-            target.ifPresent(module -> packages.forEach(pkg -> {
-                controller.addExports(
-                        source.get(),
-                        pkg,
-                        module
-                );
-            }));
-        });
-    }
-
-    static void addOpens(ModuleLayer.Controller controller, Optional<Module> source, List<Optional<Module>> targets, List<String> packages) {
-        if (source.isEmpty() || targets.isEmpty()) return;
-        targets.forEach(target -> {
-            target.ifPresent(module -> packages.forEach(pkg -> {
-                controller.addOpens(
-                        source.get(),
-                        pkg,
-                        module
-                );
-            }));
-        });
     }
 }

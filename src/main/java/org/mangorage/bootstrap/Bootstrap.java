@@ -82,7 +82,5 @@ public final class Bootstrap {
         }
 
         launchTargetMap.get(launchTarget).launch(parent, args);
-
-        var a = 1;
     }
 }

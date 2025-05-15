@@ -53,24 +53,18 @@ public final class MangoLoaderImpl extends SecureClassLoader implements IMangoLo
         });
     }
 
-    void load() {
+    void load(final ModuleLayer moduleLayer, final ModuleLayer.Controller controller) {
+        loadModuleConfiguration(moduleLayer, controller);
         loadTransformers();
-        loadModuleConfiguration();
     }
 
-    void loadTransformers() {
-        ServiceLoader.load(IClassTransformer.class)
-                .stream()
-                .forEach(provider -> {
-                    transformers.add(provider.get());
-                });
-    }
-
-    void loadModuleConfiguration() {
+    void loadModuleConfiguration(final ModuleLayer moduleLayer, final ModuleLayer.Controller controller) {
+        final var moduleLayerImpl = new ModuleLayerImpl(moduleLayer, controller);
         ServiceLoader.load(IModuleConfigurator.class)
                 .stream()
-                .forEach(provider -> {
-                    final var configurator = provider.get();
+                .map(ServiceLoader.Provider::get)
+                .forEach(configurator -> {
+                    configurator.configureModuleLayer(moduleLayerImpl);
 
                     moduleMap.forEach((id, module) -> {
                         final var children = configurator.getChildren(id);
@@ -81,6 +75,15 @@ public final class MangoLoaderImpl extends SecureClassLoader implements IMangoLo
                                 .map(moduleMap::get)
                                 .forEach(module::addChild);
                     });
+                });
+    }
+
+    void loadTransformers() {
+        ServiceLoader.load(IClassTransformer.class)
+                .stream()
+                .map(ServiceLoader.Provider::get)
+                .forEach(transformer -> {
+                    transformers.add(transformer);
                 });
     }
 
