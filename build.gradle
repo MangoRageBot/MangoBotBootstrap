@@ -9,7 +9,7 @@ buildscript {
             url = 'https://repo.mattmalec.com/repository/releases'
         }
         maven {
-            url = "https://maven.minecraftforge.net/"
+            url = "https://maven.mangorage.org/releases"
         }
     }
 
@@ -76,9 +76,6 @@ jar {
 }
 
 tasks.register('runMain', JavaExec) {
-    setWorkingDir("C:\\Users\\andre\\Desktop\\minecraft_test")
-
-
     group = 'application'
     description = 'Runs the main class.'
 
@@ -111,7 +108,7 @@ publishing {
 
     repositories {
         maven {
-            url = "https://maven.minecraftforge.net/"
+            url = "https://maven.mangorage.org/releases"
 
             credentials {
                 username = System.getenv("MAVEN_USER")

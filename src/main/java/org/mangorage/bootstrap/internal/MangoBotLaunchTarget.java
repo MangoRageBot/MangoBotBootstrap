@@ -38,7 +38,6 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
         moduleNames.addAll(Util.getModuleNames(pluginsPath));
         moduleNames.addAll(Util.getModuleNames(sortedLibrariesPath));
 
-
         final var moduleCfg = Configuration.resolve(
                 ModuleFinder.of(
                         sortedLibrariesPath
