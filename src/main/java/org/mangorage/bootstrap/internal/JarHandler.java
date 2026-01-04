@@ -69,6 +69,11 @@ public final class JarHandler {
                 // This is a proper JPMS module JAR
                 return ModuleFinder.of(jarPath).findAll().iterator().next().descriptor().name();
             } else {
+                final var found = ModuleFinder.of(jarPath).findAll().stream().findAny();
+                if (found.isPresent()) {
+                    return found.get().descriptor().name();
+                }
+
                 // Fall back to heuristic based on filename (best effort)
                 String filename = jarPath.getFileName().toString();
                 return filename.replaceAll("-[\\d\\.]+.*\\.jar$", "").replaceAll("\\.jar$", "");
