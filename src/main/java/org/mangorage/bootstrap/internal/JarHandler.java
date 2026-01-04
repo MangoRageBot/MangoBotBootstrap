@@ -45,7 +45,7 @@ public final class JarHandler {
                     Path dest = target.resolve(jar.getFileName());
                     Files.copy(jar, dest, StandardCopyOption.REPLACE_EXISTING);
                     seenModules.put(moduleName, jar);
-                    System.out.println("Added module: " + moduleName);
+                    System.out.println("Added module: " + moduleName + " from " + jar);
                 } else {
                     System.out.println("Duplicate module ignored: " + moduleName + " from " + jar);
                 }
