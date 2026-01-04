@@ -70,7 +70,7 @@ public final class JarHandler {
                 return ModuleFinder.of(jarPath).findAll().iterator().next().descriptor().name();
             } else {
                 final var found = ModuleFinder.of(jarPath).findAll().stream().findAny();
-                if (found.isPresent()) {
+                if (found.isPresent() && jarPath.toString().contains("core")) {
                     return found.get().descriptor().name();
                 }
 
