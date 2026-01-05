@@ -42,6 +42,7 @@ public final class JarHandler {
                 }
 
                 if (!seenModules.containsKey(moduleName)) {
+                    if (check(jar)) continue;
                     Path dest = target.resolve(jar.getFileName());
                     Files.copy(jar, dest, StandardCopyOption.REPLACE_EXISTING);
                     seenModules.put(moduleName, jar);
@@ -53,6 +54,10 @@ public final class JarHandler {
         }
 
         System.out.println("Finished deduplicating modules. Result at: " + target);
+    }
+
+    static boolean check(Path path) {
+        return path.toString().contains("okio") && !path.toString().contains("jvm");
     }
 
     private static void deleteDirectory(Path dir) throws IOException {
@@ -70,7 +75,7 @@ public final class JarHandler {
                 return ModuleFinder.of(jarPath).findAll().iterator().next().descriptor().name();
             } else {
                 final var found = ModuleFinder.of(jarPath).findAll().stream().findAny();
-                if (found.isPresent() && jarPath.toString().contains("core")) {
+                if (found.isPresent()) {
                     return found.get().descriptor().name();
                 }
 
