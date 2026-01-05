@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-import java.util.zip.ZipEntry;
 
 public final class JarHandler {
 
@@ -23,9 +22,9 @@ public final class JarHandler {
     }
 
     enum ModuleNameOrigin {
+        MODULE_INFO, // Takes Highest priority
         MANIFEST,
-        MODULE_INFO,
-        GUESSED
+        GUESSED // Takes lowest
     }
 
     record Result(String name, ModuleNameOrigin origin, Path jar, AtomicReference<UnsafeRunnable> task) {
