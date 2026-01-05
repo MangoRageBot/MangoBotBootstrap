@@ -2,6 +2,7 @@ package org.mangorage.bootstrap.internal;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.module.ModuleFinder;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -11,6 +12,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 
 public final class JarHandler {
@@ -85,35 +87,49 @@ public final class JarHandler {
 
     private static Result resolveModuleName(Path jarPath) {
         try (JarFile jarFile = new JarFile(jarPath.toFile())) {
-            ZipEntry entry = jarFile.getEntry("module-info.class");
-            if (entry != null) {
-                // This is a proper JPMS module JAR
+
+            // 1. Proper JPMS module
+            if (jarFile.getEntry("module-info.class") != null) {
                 return new Result(
-                        ModuleFinder.of(jarPath).findAll().iterator().next().descriptor().name(),
+                        ModuleFinder.of(jarPath)
+                                .findAll()
+                                .iterator()
+                                .next()
+                                .descriptor()
+                                .name(),
                         ModuleNameOrigin.MODULE_INFO,
                         jarPath
                 );
-            } else {
-                final var found = ModuleFinder.of(jarPath).findAll().stream().findAny();
-                if (found.isPresent()) {
+            }
+
+            // 2. Check MANIFEST.MF for Automatic-Module-Name
+            Manifest manifest = jarFile.getManifest();
+            if (manifest != null) {
+                String autoName = manifest.getMainAttributes()
+                        .getValue("Automatic-Module-Name");
+
+                if (autoName != null && !autoName.isBlank()) {
                     return new Result(
-                            found.get().descriptor().name(),
+                            autoName,
                             ModuleNameOrigin.MANIFEST,
                             jarPath
                     );
                 }
-
-                // Fall back to heuristic based on filename (best effort)
-                String filename = jarPath.getFileName().toString();
-                return new Result(
-                        filename.replaceAll("-[\\d\\.]+.*\\.jar$", "").replaceAll("\\.jar$", ""),
-                        ModuleNameOrigin.GUESSED,
-                        jarPath
-                );
             }
+
+            // 3. Fallback: filename heuristic (aka desperation mode)
+            String filename = jarPath.getFileName().toString();
+            return new Result(
+                    filename
+                            .replaceAll("-[\\d\\.]+.*\\.jar$", "")
+                            .replaceAll("\\.jar$", ""),
+                    ModuleNameOrigin.GUESSED,
+                    jarPath
+            );
+
         } catch (IOException e) {
-            e.printStackTrace();
-            return null;
+            throw new UncheckedIOException("Failed to read JAR: " + jarPath, e);
         }
     }
+
 }
