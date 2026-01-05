@@ -11,11 +11,16 @@ import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 
 public final class JarHandler {
+
+    interface UnsafeRunnable {
+        void run() throws Exception;
+    }
 
     enum ModuleNameOrigin {
         MANIFEST,
@@ -23,7 +28,11 @@ public final class JarHandler {
         GUESSED
     }
 
-    record Result(String name, ModuleNameOrigin origin, Path jar) {}
+    record Result(String name, ModuleNameOrigin origin, Path jar, AtomicReference<UnsafeRunnable> task) {
+        public Result(String name, ModuleNameOrigin origin, Path jar) {
+            this(name, origin, jar, new AtomicReference<>());
+        }
+    }
 
     static void safeHandle(final Path source, final Path target) {
         try {
@@ -53,16 +62,16 @@ public final class JarHandler {
 
                 if (!seenModules.containsKey(module.name())) {
                     Path dest = target.resolve(jar.getFileName());
-                    Files.copy(jar, dest, StandardCopyOption.REPLACE_EXISTING);
+                    module.task().set(() -> Files.copy(jar, dest, StandardCopyOption.REPLACE_EXISTING));
                     seenModules.put(module.name(), module);
                     System.out.println("Added module: " + module.name() + " from " + jar);
                 } else {
                     if (seenModules.get(module.name()).origin() == ModuleNameOrigin.GUESSED && module.origin() != ModuleNameOrigin.GUESSED) {
                         var oldModule = seenModules.get(module.name());
                         Path dest = target.resolve(jar.getFileName());
-                        Files.copy(jar, dest, StandardCopyOption.REPLACE_EXISTING);
+                        module.task().set(() -> Files.copy(jar, dest, StandardCopyOption.REPLACE_EXISTING));
                         seenModules.put(module.name(), module);
-                        System.out.println("Swapped to module: " + module.name() + "to " + jar + " from" + oldModule.jar());
+                        System.out.println("Swapped module: " + module.name() + " jar to " + jar + " from" + oldModule.jar());
                         return;
                     }
 
@@ -70,6 +79,16 @@ public final class JarHandler {
                 }
             }
         }
+
+        seenModules.forEach((string, result) -> {
+            final var runnable = result.task().get();
+            if (runnable != null)
+                try {
+                    runnable.run();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+        });
 
         System.out.println("Finished deduplicating modules. Result at: " + target);
     }
