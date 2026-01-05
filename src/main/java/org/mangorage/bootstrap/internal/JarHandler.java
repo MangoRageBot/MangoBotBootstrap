@@ -15,6 +15,14 @@ import java.util.zip.ZipEntry;
 
 public final class JarHandler {
 
+    enum ModuleNameOrigin {
+        MANIFEST,
+        MODULE_INFO,
+        GUESSED
+    }
+
+    record Result(String name, ModuleNameOrigin origin, Path jar) {}
+
     static void safeHandle(final Path source, final Path target) {
         try {
             handle(source, target);
@@ -31,24 +39,32 @@ public final class JarHandler {
 
         Files.createDirectories(target);
 
-        Map<String, Path> seenModules = new HashMap<>();
+        Map<String, Result> seenModules = new HashMap<>();
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(source, "*.jar")) {
             for (Path jar : stream) {
-                String moduleName = resolveModuleName(jar);
-                if (moduleName == null) {
+                var module = resolveModuleName(jar);
+                if (module == null) {
                     System.out.println("Skipping non-module JAR: " + jar);
                     continue;
                 }
 
-                if (!seenModules.containsKey(moduleName)) {
-                    if (check(jar)) continue;
+                if (!seenModules.containsKey(module.name())) {
                     Path dest = target.resolve(jar.getFileName());
                     Files.copy(jar, dest, StandardCopyOption.REPLACE_EXISTING);
-                    seenModules.put(moduleName, jar);
-                    System.out.println("Added module: " + moduleName + " from " + jar);
+                    seenModules.put(module.name(), module);
+                    System.out.println("Added module: " + module.name() + " from " + jar);
                 } else {
-                    System.out.println("Duplicate module ignored: " + moduleName + " from " + jar);
+                    if (seenModules.get(module.name()).origin() == ModuleNameOrigin.GUESSED && module.origin() != ModuleNameOrigin.GUESSED) {
+                        var oldModule = seenModules.get(module.name());
+                        Path dest = target.resolve(jar.getFileName());
+                        Files.copy(jar, dest, StandardCopyOption.REPLACE_EXISTING);
+                        seenModules.put(module.name(), module);
+                        System.out.println("Swapped to module: " + module.name() + "to " + jar + " from" + oldModule.jar());
+                        return;
+                    }
+
+                    System.out.println("Duplicate module ignored: " + module.name() + " from " + jar);
                 }
             }
         }
@@ -67,21 +83,33 @@ public final class JarHandler {
                 .forEach(File::delete);
     }
 
-    private static String resolveModuleName(Path jarPath) {
+    private static Result resolveModuleName(Path jarPath) {
         try (JarFile jarFile = new JarFile(jarPath.toFile())) {
             ZipEntry entry = jarFile.getEntry("module-info.class");
             if (entry != null) {
                 // This is a proper JPMS module JAR
-                return ModuleFinder.of(jarPath).findAll().iterator().next().descriptor().name();
+                return new Result(
+                        ModuleFinder.of(jarPath).findAll().iterator().next().descriptor().name(),
+                        ModuleNameOrigin.MODULE_INFO,
+                        jarPath
+                );
             } else {
                 final var found = ModuleFinder.of(jarPath).findAll().stream().findAny();
                 if (found.isPresent()) {
-                    return found.get().descriptor().name();
+                    return new Result(
+                            found.get().descriptor().name(),
+                            ModuleNameOrigin.MANIFEST,
+                            jarPath
+                    );
                 }
 
                 // Fall back to heuristic based on filename (best effort)
                 String filename = jarPath.getFileName().toString();
-                return filename.replaceAll("-[\\d\\.]+.*\\.jar$", "").replaceAll("\\.jar$", "");
+                return new Result(
+                        filename.replaceAll("-[\\d\\.]+.*\\.jar$", "").replaceAll("\\.jar$", ""),
+                        ModuleNameOrigin.GUESSED,
+                        jarPath
+                );
             }
         } catch (IOException e) {
             e.printStackTrace();
