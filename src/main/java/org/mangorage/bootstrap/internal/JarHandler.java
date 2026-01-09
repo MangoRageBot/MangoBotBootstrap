@@ -24,6 +24,7 @@ public final class JarHandler {
     enum ModuleNameOrigin {
         MODULE_INFO, // Takes Highest priority
         MANIFEST,
+        MANIFEST_BUNDLE_SYMBOLIC_NAME,
         MULTI_RELEASE,
         GUESSED // Takes lowest
     }
@@ -136,6 +137,7 @@ public final class JarHandler {
 
             // 2. Check MANIFEST.MF for Automatic-Module-Name
             Manifest manifest = jarFile.getManifest();
+
             if (manifest != null) {
                 String autoName = manifest.getMainAttributes()
                         .getValue("Automatic-Module-Name");
@@ -147,6 +149,18 @@ public final class JarHandler {
                             jarPath
                     );
                 }
+
+                String symbolicName = manifest.getMainAttributes()
+                        .getValue("Bundle-SymbolicName");
+
+                if (symbolicName != null) {
+                    return new Result(
+                            symbolicName,
+                            ModuleNameOrigin.MANIFEST_BUNDLE_SYMBOLIC_NAME,
+                            jarPath
+                    );
+                }
+
             }
 
             // 3. Fallback: filename heuristic (aka desperation mode)
