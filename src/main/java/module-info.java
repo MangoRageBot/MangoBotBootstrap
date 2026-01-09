@@ -1,6 +1,7 @@
 module org.mangorage.bootstrap {
-    requires jdk.unsupported;
     requires java.scripting;
+    requires static com.google.gson;
+    requires static java.sql;
 
     exports org.mangorage.bootstrap.api.transformer;
     exports org.mangorage.bootstrap.api.module;

@@ -2,6 +2,7 @@ buildscript {
     repositories {
         mavenCentral()
         mavenLocal()
+        gradlePluginPortal()
         maven {
             url = uri("https://plugins.gradle.org/m2/")
         }
@@ -14,7 +15,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'gradle.plugin.com.github.johnrengelman:shadow:7.1.2'
+        classpath 'com.gradleup.shadow:shadow-gradle-plugin:+'
     }
 }
 
@@ -23,6 +24,8 @@ plugins {
 }
 
 apply plugin: 'maven-publish'
+apply plugin: 'com.gradleup.shadow'
+
 
 group = 'org.mangorage'
 version = getLatestGitTag() + "." + getLatestGitVersion()
@@ -55,6 +58,9 @@ repositories {
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    implementation("com.google.code.gson:gson:2.10.1")
+    shadow('com.google.code.gson:gson:2.10.1')
 }
 
 test {
@@ -75,6 +81,15 @@ jar {
     }
 }
 
+shadowJar {
+    group "main tasks"
+    archiveClassifier.set('')
+
+    excludes.remove('module-info.class')
+    relocate('com.google.gson', 'mangobot.bootstrap.internal.shaded.com.google.gson')
+    relocate('joptsimple', 'mangobot.bootstrap.internal.shaded.joptsimple')
+}
+
 tasks.register('runMain', JavaExec) {
     group = 'application'
     description = 'Runs the main class.'
@@ -86,7 +101,7 @@ tasks.register('runMain', JavaExec) {
 publishing {
     publications.register("mangobotaddon", MavenPublication) {
         artifactId = 'mangobotbootstrap'
-        artifact jar
+        artifact shadowJar
         artifact sourcesJar
 
         pom {

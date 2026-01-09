@@ -1,5 +1,6 @@
 package org.mangorage.bootstrap;
 
+import com.google.gson.Gson;
 import org.mangorage.bootstrap.api.launch.ILaunchTarget;
 import org.mangorage.bootstrap.internal.Util;
 import org.mangorage.bootstrap.internal.MangoBotLaunchTarget;
@@ -14,6 +15,8 @@ import java.util.ServiceLoader;
 import java.util.Set;
 
 public final class Bootstrap {
+
+    private static final Gson GSON = new Gson();
 
     public static void main(String[] args) throws Throwable {
         if (!(args.length >= 2)) {
