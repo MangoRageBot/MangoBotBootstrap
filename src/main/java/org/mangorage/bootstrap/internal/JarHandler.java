@@ -63,18 +63,18 @@ public final class JarHandler {
                     Path dest = target.resolve(jar.getFileName());
                     module.task().set(() -> Files.copy(jar, dest, StandardCopyOption.REPLACE_EXISTING));
                     seenModules.put(module.name(), module);
-                    System.out.println("Added module: " + module.name() + " from " + jar);
+                    System.out.println("Added module: " + module.name() + " from " + jar + " Search Origin: " + module.origin());
                 } else {
                     if (seenModules.get(module.name()).origin() == ModuleNameOrigin.GUESSED && module.origin() != ModuleNameOrigin.GUESSED) {
                         var oldModule = seenModules.get(module.name());
                         Path dest = target.resolve(jar.getFileName());
                         module.task().set(() -> Files.copy(jar, dest, StandardCopyOption.REPLACE_EXISTING));
                         seenModules.put(module.name(), module);
-                        System.out.println("Swapped module: " + module.name() + " jar to " + jar + " from" + oldModule.jar());
+                        System.out.println("Swapped module: " + module.name() + " jar to " + jar + " from" + oldModule.jar() + " Search Origin: " + module.origin());
                         continue;
                     }
 
-                    System.out.println("Duplicate module ignored: " + module.name() + " from " + jar);
+                    System.out.println("Duplicate module ignored: " + module.name() + " from " + jar + " Search Origin: " + module.origin());
                 }
             }
         }
