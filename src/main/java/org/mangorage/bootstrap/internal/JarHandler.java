@@ -118,7 +118,18 @@ public final class JarHandler {
             } catch (Exception ignore) {}
 
             // 1. Proper JPMS module
-            if (moduleName != null) {
+            if (jarFile.getEntry("module-info.class") != null) {
+                return new Result(
+                        ModuleFinder.of(jarPath)
+                                .findAll()
+                                .iterator()
+                                .next()
+                                .descriptor()
+                                .name(),
+                        ModuleNameOrigin.MODULE_INFO,
+                        jarPath
+                );
+            } else if (moduleName != null) {
                 return new Result(moduleName, ModuleNameOrigin.MODULE_INFO, jarPath);
             }
 
