@@ -28,7 +28,7 @@ apply plugin: 'com.gradleup.shadow'
 
 
 group = 'org.mangorage'
-version = getLatestGitTag() + "." + getLatestGitVersion()
+version = getLatestGitTag() + "." + getLatestGitVersion() + "-beta.1"
 
 println("Version -> " + version)
 

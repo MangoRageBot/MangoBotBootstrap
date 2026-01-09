@@ -57,6 +57,25 @@ public final class JarHandler {
                     );
                 }
 
+                try {
+                    System.out.println("MAYBE!?");
+                    final var found = ModuleFinder.of(jarPath).findAll();
+                    System.out.println(found);
+                    if (found != null) {
+                        final var foundModule = found.stream().findAny();
+                        if (foundModule.isPresent())
+                            System.out.println(foundModule.get());
+                        return new Result(
+                                foundModule.get().descriptor().name(),
+                                ModuleNameOrigin.MODULE_FINDER,
+                                jarPath
+                        );
+                    }
+                } catch (Exception ignore) {
+                    ignore.printStackTrace();
+                }
+
+
                 String symbolicName = manifest.getMainAttributes()
                         .getValue("Bundle-SymbolicName");
 
@@ -72,10 +91,14 @@ public final class JarHandler {
 
             // 3. Fallback: filename heuristic (aka desperation mode)
             String filename = jarPath.getFileName().toString();
+
+            String cleanedName = filename
+                    .replaceAll("-[\\d\\.]+.*\\.jar$", "") // Remove version and extension
+                    .replaceAll("\\.jar$", "")             // Remove extension if no version
+                    .replace('-', '.');                    // Convert hyphens to dots
+
             return new Result(
-                    filename
-                            .replaceAll("-[\\d\\.]+.*\\.jar$", "")
-                            .replaceAll("\\.jar$", ""),
+                    cleanedName,
                     ModuleNameOrigin.GUESSED,
                     jarPath
             );

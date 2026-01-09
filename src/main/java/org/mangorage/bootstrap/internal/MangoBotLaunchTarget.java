@@ -69,7 +69,6 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
         final var librariesPath = Path.of("libraries");
         final var pluginsPath = Path.of("plugins");
 
-
         final Map<String, List<Result>> dependencies = DependencyHandler.scanPackages(pluginsPath.toAbsolutePath(), librariesPath.toAbsolutePath());
         final Map<String, Result> finalDependencies = new HashMap<>();
 
@@ -80,23 +79,28 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
             finalDependencies.put(bestResult.name(), bestResult);
         });
 
-        Path sortedLibraries = Path.of("sorted-libraries").toAbsolutePath();
-        final var list = finalDependencies.entrySet()
-                .stream()
-                .map(entry -> entry.getValue().jar())
-                .toList();
-
-        copyFilesToDirectory(list, sortedLibraries);
-
         Set<String> moduleNames = new HashSet<>();
         moduleNames.addAll(Util.getModuleNames(pluginsPath));
-        moduleNames.addAll(Util.getModuleNames(sortedLibraries));
+        moduleNames.addAll(finalDependencies.keySet());
 
-        moduleNames.remove("kotlin-stdlib-common");
+        System.out.println("Module Info");
+        System.out.println("----------------------------------------------");
+        moduleNames.forEach(name -> {
+            System.out.println("Module Name -> " + name);
+        });
+        System.out.println("----------------------------------------------");
+        System.out.println("Module -> Jar Info");
+        System.out.println("----------------------------------------------");
+        finalDependencies.forEach((module, result) -> {
+            System.out.println("Module -> " + module + " Jar -> " + result.jar() + " Name -> " + result.name() + " Origin -> " + result.origin());
+        });
+        System.out.println("----------------------------------------------");
 
         final var moduleCfg = Configuration.resolve(
                 ModuleFinder.of(
-                        sortedLibraries
+                        finalDependencies.entrySet().stream()
+                                .map(entry -> entry.getValue().jar())
+                                .toArray(Path[]::new)
                 ),
                 List.of(
                         parent.configuration()
