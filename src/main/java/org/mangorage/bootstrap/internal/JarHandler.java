@@ -129,7 +129,7 @@ public final class JarHandler {
                         ModuleNameOrigin.MODULE_INFO,
                         jarPath
                 );
-            } else if (moduleName != null) {
+            } else if (jarFile.isMultiRelease() && moduleName != null) {
                 return new Result(moduleName, ModuleNameOrigin.MODULE_INFO, jarPath);
             }
 
