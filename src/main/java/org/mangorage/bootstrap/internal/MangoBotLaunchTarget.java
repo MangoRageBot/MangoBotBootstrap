@@ -81,9 +81,9 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
         });
 
         Path sortedLibraries = Path.of("sorted-libraries").toAbsolutePath();
-        final var list = dependencies.entrySet()
+        final var list = finalDependencies.entrySet()
                 .stream()
-                .map(set -> set.getValue().getFirst().jar())
+                .map(entry -> entry.getValue().jar())
                 .toList();
 
         copyFilesToDirectory(list, sortedLibraries);
@@ -93,9 +93,6 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
         moduleNames.addAll(Util.getModuleNames(sortedLibraries));
 
         moduleNames.remove("kotlin-stdlib-common");
-
-
-
 
         final var moduleCfg = Configuration.resolve(
                 ModuleFinder.of(
