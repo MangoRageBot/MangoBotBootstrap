@@ -130,7 +130,7 @@ public final class JarHandler {
                         jarPath
                 );
             } else if (jarFile.isMultiRelease() && moduleName != null) {
-                return new Result(moduleName, ModuleNameOrigin.MODULE_INFO, jarPath);
+                return new Result(moduleName, ModuleNameOrigin.GUESSED, jarPath);
             }
 
             // 2. Check MANIFEST.MF for Automatic-Module-Name
