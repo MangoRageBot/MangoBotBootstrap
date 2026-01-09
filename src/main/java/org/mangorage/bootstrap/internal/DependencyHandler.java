@@ -28,17 +28,19 @@ public final class DependencyHandler {
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(packagesPath)) {
             for (Path entry : stream) {
-                final Dependencies dependenciesList = GSON.fromJson(
-                        readFileFromJar(entry, "installer-data/dependencies.json"),
-                        Dependencies.class
-                );
-
-                dependenciesList.dependencies().forEach(dependency -> {
-                    final var result = JarHandler.resolveModuleName(
-                            librariesPath.resolve(dependency.output())
+                if (Files.isRegularFile(entry)) {
+                    final Dependencies dependenciesList = GSON.fromJson(
+                            readFileFromJar(entry, "installer-data/dependencies.json"),
+                            Dependencies.class
                     );
-                    results.computeIfAbsent(result.name(), k -> new ArrayList<>()).add(result);
-                });
+
+                    dependenciesList.dependencies().forEach(dependency -> {
+                        final var result = JarHandler.resolveModuleName(
+                                librariesPath.resolve(dependency.output())
+                        );
+                        results.computeIfAbsent(result.name(), k -> new ArrayList<>()).add(result);
+                    });
+                }
             }
         }
 
