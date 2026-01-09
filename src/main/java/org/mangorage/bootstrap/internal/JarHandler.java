@@ -24,6 +24,7 @@ public final class JarHandler {
     enum ModuleNameOrigin {
         MODULE_INFO, // Takes Highest priority
         MANIFEST,
+        MULTI_RELEASE,
         GUESSED // Takes lowest
     }
 
@@ -132,7 +133,7 @@ public final class JarHandler {
                         jarPath
                 );
             } else if (jarFile.isMultiRelease() && moduleName != null) {
-                return new Result(moduleName, ModuleNameOrigin.GUESSED, jarPath);
+                return new Result(moduleName, ModuleNameOrigin.MULTI_RELEASE, jarPath);
             }
 
             // 2. Check MANIFEST.MF for Automatic-Module-Name
