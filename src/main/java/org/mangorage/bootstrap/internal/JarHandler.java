@@ -80,8 +80,6 @@ public final class JarHandler {
             }
         }
 
-        seenModules.remove("gson"); // HACK FIX
-
         seenModules.forEach((string, result) -> {
             final var runnable = result.task().get();
             if (runnable != null)
