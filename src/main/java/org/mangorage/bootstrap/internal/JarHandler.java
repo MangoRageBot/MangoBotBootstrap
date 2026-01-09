@@ -106,18 +106,20 @@ public final class JarHandler {
     private static Result resolveModuleName(Path jarPath) {
         try (JarFile jarFile = new JarFile(jarPath.toFile())) {
 
+            String moduleName = null;
+
+            try {
+                moduleName = ModuleFinder.of(jarPath)
+                        .findAll()
+                        .iterator()
+                        .next()
+                        .descriptor()
+                        .name();
+            } catch (Exception ignore) {}
+
             // 1. Proper JPMS module
-            if (jarFile.getEntry("module-info.class") != null) {
-                return new Result(
-                        ModuleFinder.of(jarPath)
-                                .findAll()
-                                .iterator()
-                                .next()
-                                .descriptor()
-                                .name(),
-                        ModuleNameOrigin.MODULE_INFO,
-                        jarPath
-                );
+            if (moduleName != null) {
+                return new Result(moduleName, ModuleNameOrigin.MODULE_INFO, jarPath);
             }
 
             // 2. Check MANIFEST.MF for Automatic-Module-Name
