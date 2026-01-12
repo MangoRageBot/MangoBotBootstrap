@@ -120,6 +120,8 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
 
         moduleCL.load(moduleLayer, moduleLayerController);
 
-        callMain("org.mangorage.entrypoint.MangoBotCore", args, moduleLayer.findModule("org.mangorage.mangobotcore").get());
+        // TODO: Perhaps come up with a better system for locating this?
+        // TODO: Perhaps have a Manifest attribute that searches for MangoBotBootStrapTargetClass?
+        callMain("org.mangorage.mangobotcore.entrypoint.MangoBotCore", args, moduleLayer.findModule("org.mangorage.mangobotcore").get());
     }
 }
