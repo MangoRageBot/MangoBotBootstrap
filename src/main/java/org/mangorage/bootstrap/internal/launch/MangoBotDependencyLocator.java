@@ -3,6 +3,7 @@ package org.mangorage.bootstrap.internal.launch;
 import org.mangorage.bootstrap.api.dependency.IDependency;
 import org.mangorage.bootstrap.api.dependency.IDependencyLocator;
 import org.mangorage.bootstrap.internal.DependencyHandler;
+
 import java.nio.file.Path;
 import java.util.List;
 
