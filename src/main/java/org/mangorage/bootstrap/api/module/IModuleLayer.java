@@ -1,10 +1,8 @@
 package org.mangorage.bootstrap.api.module;
 
-import org.mangorage.bootstrap.internal.launch.ModuleLayerImpl;
-
 import java.util.List;
 
-public sealed interface IModuleLayer permits ModuleLayerImpl {
+public interface IModuleLayer {
     void addOpens(String sourceModule, String pkg, String targetModule);
     void addExports(String sourceModule, String pkg, String targetModule);
     void addReads(String sourceModule, String targetModule);
