@@ -71,8 +71,12 @@ public final class Bootstrap {
         ServiceLoader.load(moduleLayer, ILaunchTarget.class)
                 .stream()
                 .forEach(provider -> {
-                    final var target = provider.get();
-                    launchTargetMap.put(target.getId(), target);
+                    try {
+                        final var target = provider.get();
+                        launchTargetMap.put(target.getId(), target);
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e);
+                    }
                 });
 
         // Only add if we dont have any other launch targets...
