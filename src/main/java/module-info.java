@@ -7,6 +7,7 @@ module org.mangorage.bootstrap {
     exports org.mangorage.bootstrap.api.module;
     exports org.mangorage.bootstrap.api.launch;
     exports org.mangorage.bootstrap.api.loader;
+    exports org.mangorage.bootstrap.api.dependency;
 
     opens org.mangorage.bootstrap;
     opens org.mangorage.bootstrap.internal.launch;
