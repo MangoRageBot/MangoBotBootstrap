@@ -3,10 +3,9 @@ package org.mangorage.bootstrap;
 import com.google.gson.Gson;
 import org.mangorage.bootstrap.api.launch.ILaunchTarget;
 import org.mangorage.bootstrap.internal.util.Util;
+
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -32,11 +31,17 @@ public final class Bootstrap {
 
         ModuleLayer parent = null;
 
+        if (Bootstrap.class.getModule() != null) {
+            parent = Bootstrap.class.getModule().getLayer();
+        }
+
         if (parent == null)
             parent = ModuleLayer.boot();
 
         // Where additional launch targets can be defined...
-        final Path launchPath = Path.of("boot").toAbsolutePath();
+        Path launchPath = Path.of(
+                "launch"
+        );
 
         final var moduleCfg = Configuration
                 .resolveAndBind(
@@ -48,9 +53,9 @@ public final class Bootstrap {
                         ),
                         ModuleFinder.of(),
                         Files.exists(launchPath) ?
-                        Util.getModuleNames(
-                                launchPath
-                        ) : Set.of()
+                                Util.getModuleNames(
+                                        launchPath
+                                ) : Set.of()
                 );
 
         final var moduleLayerController = ModuleLayer.defineModulesWithOneLoader(
@@ -59,27 +64,14 @@ public final class Bootstrap {
                 Thread.currentThread().getContextClassLoader()
         );
         final var moduleLayer = moduleLayerController.layer();
-        final var moduleCL = new URLClassLoader(
-                new URL[]{
-                        Path.of("boot/boot.jar").toUri().toURL()
-                },
-                Thread.currentThread().getContextClassLoader()
-        );
-
-        moduleLayer.defineModulesWithOneLoader(moduleCfg, moduleCL);
-        Thread.currentThread().setContextClassLoader(moduleCL);
 
         final Map<String, ILaunchTarget> launchTargetMap = new HashMap<>();
 
         ServiceLoader.load(moduleLayer, ILaunchTarget.class)
                 .stream()
                 .forEach(provider -> {
-                    try {
-                        final var target = provider.get();
-                        launchTargetMap.put(target.getId(), target);
-                    } catch (Exception e) {
-                        throw new IllegalStateException(e);
-                    }
+                    final var target = provider.get();
+                    launchTargetMap.put(target.getId(), target);
                 });
 
         if (!launchTargetMap.containsKey(launchTarget)) {
