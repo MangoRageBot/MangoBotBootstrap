@@ -1,6 +1,6 @@
 package org.mangorage.bootstrap.api.module;
 
-import org.mangorage.bootstrap.internal.ModuleLayerImpl;
+import org.mangorage.bootstrap.internal.launch.ModuleLayerImpl;
 
 import java.util.List;
 

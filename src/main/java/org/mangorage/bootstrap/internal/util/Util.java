@@ -1,4 +1,4 @@
-package org.mangorage.bootstrap.internal;
+package org.mangorage.bootstrap.internal.util;
 
 import java.io.File;
 import java.lang.module.ModuleFinder;

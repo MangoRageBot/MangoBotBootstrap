@@ -1,6 +1,6 @@
 package org.mangorage.bootstrap.internal;
 
-import org.mangorage.bootstrap.internal.util.ModuleNameOrigin;
+import org.mangorage.bootstrap.api.dependency.ModuleNameOrigin;
 import org.mangorage.bootstrap.internal.util.Result;
 
 import java.io.IOException;
@@ -58,9 +58,7 @@ public final class JarHandler {
                 }
 
                 try {
-                    System.out.println("MAYBE!?");
                     final var found = ModuleFinder.of(jarPath).findAll();
-                    System.out.println(found);
                     if (found != null) {
                         final var foundModule = found.stream().findAny();
                         if (foundModule.isPresent())

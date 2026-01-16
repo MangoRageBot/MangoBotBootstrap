@@ -1,6 +1,11 @@
-package org.mangorage.bootstrap.internal;
+package org.mangorage.bootstrap.internal.launch;
 
+import org.mangorage.bootstrap.api.dependency.IDependency;
+import org.mangorage.bootstrap.api.dependency.IDependencyLocator;
 import org.mangorage.bootstrap.api.launch.ILaunchTarget;
+import org.mangorage.bootstrap.api.launch.ILaunchTargetEntrypoint;
+import org.mangorage.bootstrap.internal.DependencyHandler;
+import org.mangorage.bootstrap.internal.util.Util;
 import org.mangorage.bootstrap.internal.util.Result;
 
 import java.io.IOException;
@@ -9,14 +14,16 @@ import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 
-import static org.mangorage.bootstrap.internal.Util.callMain;
+import static org.mangorage.bootstrap.internal.util.Util.callMain;
 
 public final class MangoBotLaunchTarget implements ILaunchTarget {
 
@@ -49,7 +56,7 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
 
         // Walk the directory bottom-up and delete everything
         Files.walk(dir)
-                .sorted((a, b) -> b.compareTo(a)) // delete children first
+                .sorted(Comparator.reverseOrder()) // delete children first
                 .forEach(path -> {
                     try {
                         Files.delete(path);
@@ -66,23 +73,39 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
 
     @Override
     public void launch(ModuleLayer parent, String[] args) throws Throwable {
-        final var librariesPath = Path.of("libraries");
         final var pluginsPath = Path.of("plugins");
 
-        final Map<String, List<Result>> dependencies = DependencyHandler.scanPackages(pluginsPath.toAbsolutePath(), librariesPath.toAbsolutePath());
-        final Map<String, Result> finalDependencies = new HashMap<>();
+        List<IDependencyLocator> dependencyLocators =
+                ServiceLoader.load(parent, IDependencyLocator.class)
+                        .stream()
+                        .map(ServiceLoader.Provider::get)
+                        .toList();
+
+        final Map<String, List<IDependency>> dependencies = new HashMap<>();
+
+        dependencyLocators.forEach(locator -> {
+            if (locator.isValidLocatorFor(getId())) {
+                final var foundDependencies = locator.locate();
+                foundDependencies.forEach(dependency -> {
+                    dependencies.computeIfAbsent(dependency.getName(), k -> new ArrayList<>()).add(dependency);
+                });
+            }
+        });
+
+        final Map<String, IDependency> finalDependencies = new HashMap<>();
 
         dependencies.forEach((id, results) -> {
-            final Result bestResult = results.stream()
-                    .min(Comparator.comparingInt(r -> r.origin().ordinal()))
+            final IDependency bestResult = results.stream()
+                    .min(Comparator.comparingInt(r -> r.getModuleNameOrigin().ordinal()))
                     .get();
-            finalDependencies.put(bestResult.name(), bestResult);
+            finalDependencies.put(bestResult.getName(), bestResult);
         });
 
         Set<String> moduleNames = new HashSet<>();
         moduleNames.addAll(Util.getModuleNames(pluginsPath));
         moduleNames.addAll(finalDependencies.keySet());
 
+        System.out.println("----------------------------------------------");
         System.out.println("Module Info");
         System.out.println("----------------------------------------------");
         moduleNames.forEach(name -> {
@@ -92,14 +115,14 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
         System.out.println("Module -> Jar Info");
         System.out.println("----------------------------------------------");
         finalDependencies.forEach((module, result) -> {
-            System.out.println("Module -> " + module + " Jar -> " + result.jar() + " Name -> " + result.name() + " Origin -> " + result.origin());
+            System.out.println("Module -> " + module + " Jar -> " + result.resolveJar() + " Name -> " + result.getName() + " Origin -> " + result.getModuleNameOrigin());
         });
         System.out.println("----------------------------------------------");
 
         final var moduleCfg = Configuration.resolve(
                 ModuleFinder.of(
-                        finalDependencies.entrySet().stream()
-                                .map(entry -> entry.getValue().jar())
+                        finalDependencies.values().stream()
+                                .map(IDependency::resolveJar)
                                 .toArray(Path[]::new)
                 ),
                 List.of(
@@ -120,8 +143,12 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
 
         moduleCL.load(moduleLayer, moduleLayerController);
 
-        // TODO: Perhaps come up with a better system for locating this?
-        // TODO: Perhaps have a Manifest attribute that searches for MangoBotBootStrapTargetClass?
-        callMain("org.mangorage.mangobotcore.entrypoint.MangoBotCore", args, moduleLayer.findModule("org.mangorage.mangobotcore").get());
+        ServiceLoader.load(moduleLayer, ILaunchTargetEntrypoint.class)
+                .stream()
+                .map(ServiceLoader.Provider::get)
+                .filter(entrypoint -> entrypoint.getLaunchTargetId().equals("mangobot"))
+                .findAny()
+                .orElseThrow(() -> new IllegalStateException("Unable to find entrypoint for mangobot launch target"))
+                .init(args);
     }
 }

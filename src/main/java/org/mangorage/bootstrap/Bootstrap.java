@@ -1,9 +1,10 @@
 package org.mangorage.bootstrap;
 
 import com.google.gson.Gson;
+import org.mangorage.bootstrap.api.dependency.IDependencyLocator;
 import org.mangorage.bootstrap.api.launch.ILaunchTarget;
-import org.mangorage.bootstrap.internal.Util;
-import org.mangorage.bootstrap.internal.MangoBotLaunchTarget;
+import org.mangorage.bootstrap.internal.util.Util;
+import org.mangorage.bootstrap.internal.launch.MangoBotLaunchTarget;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleFinder;
 import java.nio.file.Files;

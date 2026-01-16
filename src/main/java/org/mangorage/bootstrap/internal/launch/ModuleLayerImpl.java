@@ -1,4 +1,4 @@
-package org.mangorage.bootstrap.internal;
+package org.mangorage.bootstrap.internal.launch;
 
 import org.mangorage.bootstrap.api.module.IModuleLayer;
 

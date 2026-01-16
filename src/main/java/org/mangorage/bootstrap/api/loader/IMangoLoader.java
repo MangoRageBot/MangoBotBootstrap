@@ -1,6 +1,6 @@
 package org.mangorage.bootstrap.api.loader;
 
-import org.mangorage.bootstrap.internal.MangoLoaderImpl;
+import org.mangorage.bootstrap.internal.launch.MangoLoaderImpl;
 
 public sealed interface IMangoLoader permits MangoLoaderImpl {
     byte[] getClassBytes(String name);

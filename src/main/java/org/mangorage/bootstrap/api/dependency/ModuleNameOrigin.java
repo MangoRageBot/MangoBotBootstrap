@@ -1,4 +1,4 @@
-package org.mangorage.bootstrap.internal.util;
+package org.mangorage.bootstrap.api.dependency;
 
 public enum ModuleNameOrigin {
     MODULE_INFO, // HIGHEST

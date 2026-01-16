@@ -29,6 +29,4 @@ public record Dependency(
         String version,
         String target,
         String output
-) {
-
-}
+) {}

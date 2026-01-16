@@ -2,9 +2,8 @@ package org.mangorage.bootstrap.internal;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.mangorage.bootstrap.api.dependency.IDependency;
 import org.mangorage.bootstrap.internal.util.Dependencies;
-import org.mangorage.bootstrap.internal.util.Result;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,18 +12,16 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public final class DependencyHandler {
     private static final Gson GSON = new GsonBuilder().create();
 
-    public static Map<String, List<Result>> scanPackages(Path packagesPath, Path librariesPath) throws IOException {
+    public static List<IDependency> scanPackages(Path packagesPath, Path librariesPath) throws IOException {
 
-        final Map<String, List<Result>> results = new HashMap<>();
+        final List<IDependency> results = new ArrayList<>();
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(packagesPath)) {
             for (Path entry : stream) {
@@ -38,7 +35,7 @@ public final class DependencyHandler {
                         final var result = JarHandler.resolveModuleName(
                                 librariesPath.resolve(dependency.output())
                         );
-                        results.computeIfAbsent(result.name(), k -> new ArrayList<>()).add(result);
+                        results.add(result);
                     });
                 }
             }

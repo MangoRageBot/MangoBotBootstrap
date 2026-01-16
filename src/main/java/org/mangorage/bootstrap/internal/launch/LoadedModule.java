@@ -1,4 +1,4 @@
-package org.mangorage.bootstrap.internal;
+package org.mangorage.bootstrap.internal.launch;
 
 import java.io.IOException;
 import java.lang.module.ModuleReader;

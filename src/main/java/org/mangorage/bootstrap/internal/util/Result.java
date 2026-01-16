@@ -1,12 +1,23 @@
 package org.mangorage.bootstrap.internal.util;
 
-import org.mangorage.bootstrap.internal.JarHandler;
+import org.mangorage.bootstrap.api.dependency.IDependency;
+import org.mangorage.bootstrap.api.dependency.ModuleNameOrigin;
 
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicReference;
 
-public record Result(String name, ModuleNameOrigin origin, Path jar, AtomicReference<UnsafeRunnable> task) {
-    public Result(String name, ModuleNameOrigin origin, Path jar) {
-        this(name, origin, jar, new AtomicReference<>());
+public record Result(String name, ModuleNameOrigin origin, Path jar) implements IDependency {
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public ModuleNameOrigin getModuleNameOrigin() {
+        return origin;
+    }
+
+    @Override
+    public Path resolveJar() {
+        return jar;
     }
 }
