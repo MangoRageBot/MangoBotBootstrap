@@ -89,6 +89,6 @@ public final class Bootstrap {
             throw new IllegalStateException("Cant find launch target '%s'".formatted(launchTarget));
         }
 
-        launchTargetMap.get(launchTarget).launch(parent, args);
+        launchTargetMap.get(launchTarget).launch(moduleLayer, parent, args);
     }
 }
