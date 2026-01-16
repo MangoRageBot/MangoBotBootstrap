@@ -76,7 +76,7 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
         final var pluginsPath = Path.of("plugins");
 
         List<IDependencyLocator> dependencyLocators =
-                ServiceLoader.load(parent, IDependencyLocator.class)
+                ServiceLoader.load(IDependencyLocator.class)
                         .stream()
                         .map(ServiceLoader.Provider::get)
                         .toList();
@@ -143,7 +143,7 @@ public final class MangoBotLaunchTarget implements ILaunchTarget {
 
         moduleCL.load(moduleLayer, moduleLayerController);
 
-        ServiceLoader.load(moduleLayer, ILaunchTargetEntrypoint.class)
+        ServiceLoader.load(ILaunchTargetEntrypoint.class)
                 .stream()
                 .map(ServiceLoader.Provider::get)
                 .filter(entrypoint -> entrypoint.getLaunchTargetId().equals("mangobot"))
