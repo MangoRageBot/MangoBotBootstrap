@@ -9,6 +9,7 @@ module org.mangorage.bootstrap {
     exports org.mangorage.bootstrap.api.loader;
 
     opens org.mangorage.bootstrap;
+    opens org.mangorage.bootstrap.internal.launch;
 
     provides org.mangorage.bootstrap.api.launch.ILaunchTarget with org.mangorage.bootstrap.internal.launch.MangoBotLaunchTarget;
     provides org.mangorage.bootstrap.api.dependency.IDependencyLocator with org.mangorage.bootstrap.internal.launch.MangoBotDependencyLocator;
