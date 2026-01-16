@@ -68,16 +68,16 @@ public final class Bootstrap {
 
         final Map<String, ILaunchTarget> launchTargetMap = new HashMap<>();
 
-        ServiceLoader.load(moduleLayer, ILaunchTarget.class)
-                .stream()
-                .forEach(provider -> {
-                    try {
-                        final var target = provider.get();
-                        launchTargetMap.put(target.getId(), target);
-                    } catch (Exception e) {
-                        throw new IllegalStateException(e);
-                    }
-                });
+//        ServiceLoader.load(moduleLayer, ILaunchTarget.class)
+//                .stream()
+//                .forEach(provider -> {
+//                    try {
+//                        final var target = provider.get();
+//                        launchTargetMap.put(target.getId(), target);
+//                    } catch (Exception e) {
+//                        throw new IllegalStateException(e);
+//                    }
+//                });
 
         // Only add if we dont have any other launch targets...
         if (launchTargetMap.isEmpty()) {
