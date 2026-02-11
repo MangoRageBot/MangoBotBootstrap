@@ -3,7 +3,6 @@ package org.mangorage.bootstrap;
 import org.mangorage.bootstrap.api.launch.ILaunchTarget;
 import org.mangorage.bootstrap.api.logging.IDeferredMangoLogger;
 import org.mangorage.bootstrap.api.logging.ILoggerFactory;
-import org.mangorage.bootstrap.api.logging.IMangoLogger;
 import org.mangorage.bootstrap.internal.logger.DefaultLoggerFactory;
 import org.mangorage.bootstrap.internal.util.Util;
 
@@ -35,7 +34,7 @@ import java.util.Set;
  */
 public final class Bootstrap {
 
-    private static final IDeferredMangoLogger LOGGER = ILoggerFactory.getDefault().getWrappedProvider("slf4j");
+    private static final IDeferredMangoLogger LOGGER = ILoggerFactory.getDefault().getWrappedProvider("slf4j", Bootstrap.class);
     private static final String LAUNCH_TARGET_ARG = "--launchTarget";
     private static final String DEFAULT_LAUNCH_PATH = "launch";
 
@@ -47,14 +46,14 @@ public final class Bootstrap {
      * @throws IllegalStateException if launch target cannot be found or executed
      */
     public static void main(String[] args) throws Throwable {
-        LOGGER.info("Starting MangoBotBootstrap framework");
+        LOGGER.get().info("Starting MangoBotBootstrap framework");
 
         validateArguments(args);
 
         final String launchTarget = args[1];
         validateLaunchTarget(launchTarget);
 
-        LOGGER.info("Initializing module layers for launch target: " + launchTarget);
+        LOGGER.get().info("Initializing module layers for launch target: " + launchTarget);
 
         ModuleLayer parent = getParentModuleLayer();
         Path launchPath = Path.of(DEFAULT_LAUNCH_PATH);
@@ -71,14 +70,14 @@ public final class Bootstrap {
                             launchTarget, launchTargetMap.keySet()));
         }
 
-        LOGGER.info("Loading BootstrapLifecycle hooks");
+        LOGGER.get().info("Loading BootstrapLifecycle hooks");
 
         final var lifecycleHooks = ServiceLoader.load(moduleLayer, org.mangorage.bootstrap.api.lifecycle.IBootstrapLifecycle.class)
                 .stream()
                 .map(ServiceLoader.Provider::get)
                 .toList();
 
-        LOGGER.info("Launching target: " + launchTarget);
+        LOGGER.get().info("Launching target: " + launchTarget);
 
         try {
             final var target = launchTargetMap.get(launchTarget);
@@ -88,12 +87,12 @@ public final class Bootstrap {
                 target.launch(launchLayer, args);
             }
         } catch (Throwable t) {
-            LOGGER.error("Error during launch target execution: " + launchTarget, t);
+            LOGGER.get().error("Error during launch target execution: " + launchTarget, t);
             lifecycleHooks.forEach(hook -> hook.onError(t, moduleLayer));
             throw t;
         }
 
-        LOGGER.info("Bootstrap completed successfully");
+        LOGGER.get().info("Bootstrap completed successfully");
     }
 
     /**
@@ -156,11 +155,11 @@ public final class Bootstrap {
                     Thread.currentThread().getContextClassLoader()
             );
 
-            LOGGER.info("Successfully created module layer with " + moduleCfg.modules().size() + " modules");
+            LOGGER.get().info("Successfully created module layer with " + moduleCfg.modules().size() + " modules");
             return moduleLayerController.layer();
 
         } catch (Exception e) {
-            LOGGER.error("Failed to create module layer from path: " + launchPath, e);
+            LOGGER.get().error("Failed to create module layer from path: " + launchPath, e);
             throw new IllegalStateException("Module layer creation failed", e);
         }
     }
@@ -180,29 +179,29 @@ public final class Bootstrap {
                             final String targetId = target.getId();
 
                             if (targetId == null || targetId.trim().isEmpty()) {
-                                LOGGER.info("Ignoring launch target with null or empty ID from provider: " + provider.type());
+                                LOGGER.get().info("Ignoring launch target with null or empty ID from provider: " + provider.type());
                                 return;
                             }
 
                             if (launchTargetMap.containsKey(targetId)) {
-                                LOGGER.info("Duplicate launch target ID detected: " + targetId + ". Using first occurrence.");
+                                LOGGER.get().info("Duplicate launch target ID detected: " + targetId + ". Using first occurrence.");
                                 return;
                             }
 
                             launchTargetMap.put(targetId, target);
-                            LOGGER.info("Discovered launch target: " + targetId + " (" + provider.type() + ")");
+                            LOGGER.get().info("Discovered launch target: " + targetId + " (" + provider.type() + ")");
 
                         } catch (Exception e) {
-                            LOGGER.warn("Failed to load launch target provider: " + provider.type(), e);
+                            LOGGER.get().warn("Failed to load launch target provider: " + provider.type(), e);
                         }
                     });
 
         } catch (Exception e) {
-            LOGGER.error("Failed to discover launch targets", e);
+            LOGGER.get().error("Failed to discover launch targets", e);
             throw new IllegalStateException("Launch target discovery failed", e);
         }
 
-        LOGGER.info("Discovered " + launchTargetMap.size() + " launch targets: " + launchTargetMap.keySet());
+        LOGGER.get().info("Discovered " + launchTargetMap.size() + " launch targets: " + launchTargetMap.keySet());
         return launchTargetMap;
     }
 }

@@ -29,6 +29,8 @@ public final class DeferredMangoLogger implements IDeferredMangoLogger {
                     if (logger != null) return logger;
                 }
             }
+        } else {
+            return logger;
         }
         return loggerFunction.apply(ILoggerFactory.getDefault().getProvider("default"));
     }
