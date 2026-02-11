@@ -1,7 +1,6 @@
 package org.mangorage.bootstrap.api.logging;
 
 import org.mangorage.bootstrap.internal.logger.DefaultLoggerFactory;
-import org.mangorage.bootstrap.internal.logger.DeferredMangoLogger;
 
 public interface ILoggerFactory {
     static ILoggerFactory getDefault() {
