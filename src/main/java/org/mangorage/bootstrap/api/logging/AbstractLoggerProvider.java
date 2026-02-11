@@ -23,7 +23,7 @@ public abstract class AbstractLoggerProvider implements ILoggerProvider {
         synchronized (this.name) {
             if (!loggerCache.containsKey(name)) {
                 final var logger = createLogger(name);
-                loggerCache.put(name, createLogger(name));
+                loggerCache.put(name, logger);
                 return logger;
             }
         }
