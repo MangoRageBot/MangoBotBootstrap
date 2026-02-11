@@ -1,6 +1,7 @@
 package org.mangorage.bootstrap;
 
 import org.mangorage.bootstrap.api.launch.ILaunchTarget;
+import org.mangorage.bootstrap.api.logging.IDeferredMangoLogger;
 import org.mangorage.bootstrap.api.logging.ILoggerFactory;
 import org.mangorage.bootstrap.api.logging.IMangoLogger;
 import org.mangorage.bootstrap.internal.logger.DefaultLoggerFactory;
@@ -34,7 +35,7 @@ import java.util.Set;
  */
 public final class Bootstrap {
 
-    private static final IMangoLogger LOGGER = ILoggerFactory.getDefault().getWrappedProvider("slf4j").getLogger(Bootstrap.class);
+    private static final IDeferredMangoLogger LOGGER = ILoggerFactory.getDefault().getWrappedProvider("slf4j");
     private static final String LAUNCH_TARGET_ARG = "--launchTarget";
     private static final String DEFAULT_LAUNCH_PATH = "launch";
 
