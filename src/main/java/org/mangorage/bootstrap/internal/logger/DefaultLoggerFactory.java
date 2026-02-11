@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class DefaultLoggerFactory implements ILoggerFactory {
+public final class DefaultLoggerFactory implements ILoggerFactory {
     public static final DefaultLoggerFactory INSTANCE = new DefaultLoggerFactory();
     private static final Map<String, ILoggerProvider> providers = new ConcurrentHashMap<>(); // Placeholder for actual provider storage
 
@@ -27,5 +27,10 @@ public class DefaultLoggerFactory implements ILoggerFactory {
     @Override
     public ILoggerProvider getProvider(String providerName) {
         return providers.getOrDefault(providerName, DefaultLoggerProvider.INSTANCE);
+    }
+
+    @Override
+    public boolean hasProvider(String providerName) {
+        return providers.containsKey(providerName);
     }
 }
