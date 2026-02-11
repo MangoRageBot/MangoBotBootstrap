@@ -1,6 +1,7 @@
 package org.mangorage.bootstrap.api.logging;
 
 import org.mangorage.bootstrap.internal.logger.DefaultLoggerFactory;
+import org.mangorage.bootstrap.internal.logger.DeferredMangoLogger;
 
 public interface ILoggerFactory {
     static ILoggerFactory getDefault() {
@@ -17,22 +18,7 @@ public interface ILoggerFactory {
      * Gets the wrapped logger provider by its name. This is used to get the underlying logger provider
      * Sometimes providers come in later then originally requested, so this method can be used to use the provider after it has been loaded.
      */
-    default ILoggerProvider getWrappedProvider(String providerName) {
-        return new ILoggerProvider() {
-            private volatile ILoggerProvider delegate;
-
-            @Override
-            public String getName() {
-                return delegate == null ? providerName : delegate.getName();
-            }
-
-            @Override
-            public IMangoLogger getLogger(String name) {
-                if (delegate == null) {
-                    delegate = getProvider(providerName);
-                }
-                return delegate.getLogger(name);
-            }
-        };
+    default IDeferredMangoLogger getWrappedProvider(String providerName) {
+        return new DeferredMangoLogger(providerName, provider -> provider.getLogger(providerName));
     }
 }
