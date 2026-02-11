@@ -80,9 +80,11 @@ public final class Bootstrap {
         LOGGER.info("Launching target: " + launchTarget);
 
         try {
-            final var launchLayer = launchTargetMap.get(launchTarget).launch(moduleLayer, parent, args);
+            final var target = launchTargetMap.get(launchTarget);
+            final var launchLayer = target.setup(moduleLayer, parent, args);
             if (launchLayer != null) {
                 DefaultLoggerFactory.load(launchLayer); // Load the providers this layer has!
+                target.launch(launchLayer, args);
             }
         } catch (Throwable t) {
             LOGGER.error("Error during launch target execution: " + launchTarget, t);
