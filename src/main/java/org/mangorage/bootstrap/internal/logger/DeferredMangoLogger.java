@@ -21,7 +21,7 @@ public final class DeferredMangoLogger implements IDeferredMangoLogger {
 
     @Override
     public IMangoLogger get() {
-        if (logger == null) {
+        if (logger == null && ILoggerFactory.getDefault().hasProvider(provider)) {
             synchronized (this) {
                 if (logger == null) {
                     ILoggerProvider loggerProvider = ILoggerFactory.getDefault().getProvider(provider);

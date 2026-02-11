@@ -15,6 +15,12 @@ public interface ILoggerFactory {
     ILoggerProvider getProvider(String providerName);
 
     /**
+     * Checks if a logger provider with the given name is available. The name is defined by the provider itself
+     * and can be used to differentiate between multiple providers.
+     */
+    boolean hasProvider(String providerName);
+
+    /**
      * Gets the wrapped logger provider by its name. This is used to get the underlying logger provider
      * Sometimes providers come in later then originally requested, so this method can be used to use the provider after it has been loaded.
      */
