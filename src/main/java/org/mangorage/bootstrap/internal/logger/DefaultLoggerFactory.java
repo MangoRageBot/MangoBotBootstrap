@@ -1,5 +1,6 @@
 package org.mangorage.bootstrap.internal.logger;
 
+import org.mangorage.bootstrap.api.logging.IDeferredMangoLogger;
 import org.mangorage.bootstrap.api.logging.ILoggerFactory;
 import org.mangorage.bootstrap.api.logging.ILoggerProvider;
 import java.util.Map;
@@ -26,11 +27,23 @@ public final class DefaultLoggerFactory implements ILoggerFactory {
 
     @Override
     public ILoggerProvider getProvider(String providerName) {
-        return providers.getOrDefault(providerName, DefaultLoggerProvider.INSTANCE);
+        synchronized (INSTANCE) {
+            return providers.getOrDefault(providerName, DefaultLoggerProvider.INSTANCE);
+        }
     }
 
     @Override
     public boolean hasProvider(String providerName) {
         return providers.containsKey(providerName);
+    }
+
+    @Override
+    public IDeferredMangoLogger getWrappedProvider(String providerName, Class<?> clazz) {
+        return new DeferredMangoLogger(providerName, provider -> provider.getLogger(clazz));
+    }
+
+    @Override
+    public IDeferredMangoLogger getWrappedProvider(String providerName, String name) {
+        return new DeferredMangoLogger(providerName, provider -> provider.getLogger(name));
     }
 }

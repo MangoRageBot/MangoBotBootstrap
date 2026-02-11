@@ -20,8 +20,12 @@ public abstract class AbstractLoggerProvider implements ILoggerProvider {
 
     @Override
     public IMangoLogger getLogger(String name) {
-        if (!loggerCache.containsKey(name)) {
-            loggerCache.put(name, createLogger(name));
+        synchronized (this.name) {
+            if (!loggerCache.containsKey(name)) {
+                final var logger = createLogger(name);
+                loggerCache.put(name, createLogger(name));
+                return logger;
+            }
         }
         return loggerCache.get(name);
     }

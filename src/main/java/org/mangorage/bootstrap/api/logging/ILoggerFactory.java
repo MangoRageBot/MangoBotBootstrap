@@ -24,15 +24,11 @@ public interface ILoggerFactory {
      * Gets the wrapped logger provider by its name. This is used to get the underlying logger provider
      * Sometimes providers come in later then originally requested, so this method can be used to use the provider after it has been loaded.
      */
-    default IDeferredMangoLogger getWrappedProvider(String providerName, Class<?> clazz) {
-        return new DeferredMangoLogger(providerName, provider -> provider.getLogger(clazz));
-    }
+    IDeferredMangoLogger getWrappedProvider(String providerName, Class<?> clazz);
 
     /**
      * Gets the wrapped logger provider by its name. This is used to get the underlying logger provider
      * Sometimes providers come in later then originally requested, so this method can be used to use the provider after it has been loaded.
      */
-    default IDeferredMangoLogger getWrappedProvider(String providerName, String name) {
-        return new DeferredMangoLogger(providerName, provider -> provider.getLogger(name));
-    }
+    IDeferredMangoLogger getWrappedProvider(String providerName, String name);
 }
