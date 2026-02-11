@@ -1,6 +1,8 @@
 package org.mangorage.bootstrap;
 
 import org.mangorage.bootstrap.api.launch.ILaunchTarget;
+import org.mangorage.bootstrap.api.logging.ILoggerFactory;
+import org.mangorage.bootstrap.api.logging.IMangoLogger;
 import org.mangorage.bootstrap.internal.logger.DefaultLoggerFactory;
 import org.mangorage.bootstrap.internal.util.Util;
 
@@ -13,8 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.logging.Logger;
-import java.util.logging.Level;
 
 /**
  * Bootstrap orchestrator for modular applications.
@@ -34,7 +34,7 @@ import java.util.logging.Level;
  */
 public final class Bootstrap {
 
-    private static final Logger LOGGER = Logger.getLogger(Bootstrap.class.getName());
+    private static final IMangoLogger LOGGER = ILoggerFactory.getDefault().getProvider("slf4j").getLogger(Bootstrap.class);
     private static final String LAUNCH_TARGET_ARG = "--launchTarget";
     private static final String DEFAULT_LAUNCH_PATH = "launch";
 
@@ -85,7 +85,7 @@ public final class Bootstrap {
                 DefaultLoggerFactory.load(launchLayer); // Load the providers this layer has!
             }
         } catch (Throwable t) {
-            LOGGER.log(Level.SEVERE, "Error during launch target execution: " + launchTarget, t);
+            LOGGER.error("Error during launch target execution: " + launchTarget, t);
             lifecycleHooks.forEach(hook -> hook.onError(t, moduleLayer));
             throw t;
         }
@@ -153,11 +153,11 @@ public final class Bootstrap {
                     Thread.currentThread().getContextClassLoader()
             );
 
-            LOGGER.fine("Successfully created module layer with " + moduleCfg.modules().size() + " modules");
+            LOGGER.info("Successfully created module layer with " + moduleCfg.modules().size() + " modules");
             return moduleLayerController.layer();
 
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to create module layer from path: " + launchPath, e);
+            LOGGER.error("Failed to create module layer from path: " + launchPath, e);
             throw new IllegalStateException("Module layer creation failed", e);
         }
     }
@@ -177,25 +177,25 @@ public final class Bootstrap {
                             final String targetId = target.getId();
 
                             if (targetId == null || targetId.trim().isEmpty()) {
-                                LOGGER.warning("Ignoring launch target with null or empty ID from provider: " + provider.type());
+                                LOGGER.info("Ignoring launch target with null or empty ID from provider: " + provider.type());
                                 return;
                             }
 
                             if (launchTargetMap.containsKey(targetId)) {
-                                LOGGER.warning("Duplicate launch target ID detected: " + targetId + ". Using first occurrence.");
+                                LOGGER.info("Duplicate launch target ID detected: " + targetId + ". Using first occurrence.");
                                 return;
                             }
 
                             launchTargetMap.put(targetId, target);
-                            LOGGER.fine("Discovered launch target: " + targetId + " (" + provider.type() + ")");
+                            LOGGER.info("Discovered launch target: " + targetId + " (" + provider.type() + ")");
 
                         } catch (Exception e) {
-                            LOGGER.log(Level.WARNING, "Failed to load launch target provider: " + provider.type(), e);
+                            LOGGER.warn("Failed to load launch target provider: " + provider.type(), e);
                         }
                     });
 
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to discover launch targets", e);
+            LOGGER.error("Failed to discover launch targets", e);
             throw new IllegalStateException("Launch target discovery failed", e);
         }
 
