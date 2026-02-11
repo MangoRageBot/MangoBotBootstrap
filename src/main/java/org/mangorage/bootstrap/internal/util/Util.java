@@ -47,22 +47,4 @@ public final class Util {
 
         return null; // Jar was either not modular or you're just unlucky
     }
-
-    public static void callMain(String className, String[] args, Module module) {
-        try {
-            Class<?> clazz = Class.forName(className, false, module.getClassLoader());
-            Method mainMethod = clazz.getMethod("main", String[].class);
-
-            // Make sure it's static and public
-            if (!java.lang.reflect.Modifier.isStatic(mainMethod.getModifiers())) {
-                throw new IllegalStateException("Main method is not static, are you high?");
-            }
-
-            // Invoke the main method with a godawful cast
-            mainMethod.invoke(null, (Object) args);
-        } catch (Throwable e) {
-            e.printStackTrace();
-            throw new RuntimeException("Couldn't reflectively call main because something exploded.", e);
-        }
-    }
 }

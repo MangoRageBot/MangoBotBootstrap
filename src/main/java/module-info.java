@@ -12,9 +12,6 @@ module org.mangorage.bootstrap {
 
     opens org.mangorage.bootstrap;
 
-    uses org.mangorage.bootstrap.api.transformer.IClassTransformer;
-    uses org.mangorage.bootstrap.api.module.IModuleConfigurator;
     uses org.mangorage.bootstrap.api.launch.ILaunchTarget;
-    uses org.mangorage.bootstrap.api.dependency.IDependencyLocator;
-    uses org.mangorage.bootstrap.api.launch.ILaunchTargetEntrypoint;
+    uses org.mangorage.bootstrap.api.lifecycle.IBootstrapLifecycle;
 }
