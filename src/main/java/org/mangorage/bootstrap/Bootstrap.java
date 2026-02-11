@@ -34,7 +34,7 @@ import java.util.Set;
  */
 public final class Bootstrap {
 
-    private static final IMangoLogger LOGGER = ILoggerFactory.getDefault().getProvider("slf4j").getLogger(Bootstrap.class);
+    private static final IMangoLogger LOGGER = ILoggerFactory.getDefault().getWrappedProvider("slf4j").getLogger(Bootstrap.class);
     private static final String LAUNCH_TARGET_ARG = "--launchTarget";
     private static final String DEFAULT_LAUNCH_PATH = "launch";
 
