@@ -1,6 +1,7 @@
 package org.mangorage.bootstrap;
 
 import org.mangorage.bootstrap.api.launch.ILaunchTarget;
+import org.mangorage.bootstrap.internal.logger.DefaultLoggerFactory;
 import org.mangorage.bootstrap.internal.util.Util;
 
 import java.lang.module.Configuration;
@@ -58,6 +59,9 @@ public final class Bootstrap {
         Path launchPath = Path.of(DEFAULT_LAUNCH_PATH);
 
         final ModuleLayer moduleLayer = createLaunchModuleLayer(parent, launchPath);
+
+        DefaultLoggerFactory.load(moduleLayer); // Load the providers this layer has!
+
         final Map<String, ILaunchTarget> launchTargetMap = discoverLaunchTargets(moduleLayer);
 
         if (!launchTargetMap.containsKey(launchTarget)) {
@@ -67,6 +71,7 @@ public final class Bootstrap {
         }
 
         LOGGER.info("Loading BootstrapLifecycle hooks");
+
         final var lifecycleHooks = ServiceLoader.load(moduleLayer, org.mangorage.bootstrap.api.lifecycle.IBootstrapLifecycle.class)
                 .stream()
                 .map(ServiceLoader.Provider::get)
@@ -75,7 +80,10 @@ public final class Bootstrap {
         LOGGER.info("Launching target: " + launchTarget);
 
         try {
-            launchTargetMap.get(launchTarget).launch(moduleLayer, parent, args);
+            final var launchLayer = launchTargetMap.get(launchTarget).launch(moduleLayer, parent, args);
+            if (launchLayer != null) {
+                DefaultLoggerFactory.load(launchLayer); // Load the providers this layer has!
+            }
         } catch (Throwable t) {
             LOGGER.log(Level.SEVERE, "Error during launch target execution: " + launchTarget, t);
             lifecycleHooks.forEach(hook -> hook.onError(t, moduleLayer));
